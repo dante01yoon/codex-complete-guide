@@ -1,0 +1,10 @@
+{
+  "type": "object",
+  "properties": {
+    "passed": { "type": "integer" },
+    "failed": { "type": "integer" },
+    "summary": { "type": "string" }
+  },
+  "required": ["passed", "failed", "summary"],
+  "additionalProperties": false
+}

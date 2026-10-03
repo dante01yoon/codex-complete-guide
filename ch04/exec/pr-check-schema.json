@@ -1,0 +1,31 @@
+{
+  "type": "object",
+  "properties": {
+    "verdict": { "type": "string", "enum": ["pass", "fail"] },
+    "tests": {
+      "type": "object",
+      "properties": {
+        "passed": { "type": "integer" },
+        "failed": { "type": "integer" }
+      },
+      "required": ["passed", "failed"],
+      "additionalProperties": false
+    },
+    "problems": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "file": { "type": "string" },
+          "line": { "type": "integer" },
+          "cause": { "type": "string" }
+        },
+        "required": ["file", "line", "cause"],
+        "additionalProperties": false
+      }
+    },
+    "summary": { "type": "string" }
+  },
+  "required": ["verdict", "tests", "problems", "summary"],
+  "additionalProperties": false
+}

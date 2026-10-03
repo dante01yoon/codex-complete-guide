@@ -1,0 +1,7 @@
+# 오픈라우터용 프로필: ~/.codex/openrouter.config.toml (codex --profile openrouter)
+model_provider = "openrouter"
+model = "deepseek/deepseek-v4-flash"
+web_search = "disabled"
+
+[tui.model_availability_nux]
+"gpt-6.1-sol" = 4

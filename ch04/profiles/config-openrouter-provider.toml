@@ -1,0 +1,5 @@
+# ~/.codex/config.toml 에 추가하는 오픈라우터 제공자 정의
+[model_providers.openrouter]
+name = "OpenRouter"
+base_url = "https://openrouter.ai/api/v1"
+env_key = "OPENROUTER_API_KEY"

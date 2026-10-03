@@ -1,0 +1,29 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.codex/hooks/notify-mac.sh",
+            "commandWindows": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File %USERPROFILE%\\.codex\\hooks\\notify.ps1",
+            "async": true,
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.codex/hooks/block-rm.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

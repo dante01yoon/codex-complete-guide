@@ -1,0 +1,8 @@
+# 코드 검토용 프로필: codex --profile review
+model = "gpt-6-astra"
+model_reasoning_effort = "high"
+sandbox_mode = "read-only"
+approval_policy = "on-request"
+
+[tui.model_availability_nux]
+"gpt-6.1-sol" = 2

@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#172d2b" />
+    <title>OVAL — 한 바퀴 더</title>
+    <style>
+      :root { color-scheme: dark; --ink: #f5f3e9; --muted: #b3c0b8; --orange: #ff633b; --glass: rgba(14, 34, 31, .79); }
+      * { box-sizing: border-box; }
+      html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+      body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #98b4a7; color: var(--ink); }
+      button { font: inherit; cursor: pointer; }
+      button:focus-visible { outline: 3px solid #fff; outline-offset: 5px; }
+      [hidden] { display: none !important; }
+      #viewport { position: fixed; inset: 0; }
+      canvas { display: block; width: 100%; height: 100%; }
+      .vignette { position: fixed; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(8, 24, 22, .35), transparent 24%, transparent 65%, rgba(8, 24, 22, .48)); }
+      body.menu-open .vignette { background: linear-gradient(90deg, rgba(10, 30, 27, .93), rgba(10, 30, 27, .78) 29%, rgba(10, 30, 27, .1) 72%), linear-gradient(0deg, rgba(10, 30, 27, .65), transparent 40%); }
+      .mono { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-variant-numeric: tabular-nums; }
+      .eyebrow { font-size: 11px; font-weight: 600; letter-spacing: .2em; text-transform: uppercase; color: var(--muted); }
+      header { position: fixed; top: 32px; left: 38px; right: 38px; display: flex; align-items: center; justify-content: space-between; gap: 20px; pointer-events: none; }
+      .brand { display: flex; align-items: center; gap: 13px; }
+      .brand-mark { width: 36px; height: 24px; border: 5px solid var(--orange); border-radius: 50%; transform: rotate(-28deg); }
+      .brand-name { font-size: 27px; font-weight: 900; letter-spacing: -.06em; }
+      .brand-divider { width: 1px; height: 22px; background: #ffffff38; margin: 0 6px; }
+      .header-actions { display: flex; gap: 9px; pointer-events: auto; }
+      .quiet-button { border: 1px solid #ffffff38; border-radius: 5px; background: var(--glass); color: var(--ink); padding: 10px 14px; font-size: 12px; backdrop-filter: blur(12px); }
+      .quiet-button:hover { background: #25403a; }
+      #menu { position: fixed; top: 50%; left: max(38px, 6vw); width: min(510px, 85vw); transform: translateY(-46%); }
+      .menu-kicker { display: flex; align-items: center; gap: 12px; margin-bottom: 22px; }
+      .line { width: 28px; height: 2px; background: var(--orange); }
+      h1 { margin: 0 0 22px; font-size: clamp(42px, 5.6vw, 76px); line-height: 1.16; letter-spacing: -.07em; font-weight: 850; }
+      h1 em { font-style: normal; color: var(--orange); }
+      .menu-description { margin: 0 0 29px; max-width: 420px; font-size: 14px; line-height: 1.85; color: #c5d0c7; word-break: keep-all; }
+      .primary-button { display: inline-flex; align-items: center; justify-content: space-between; gap: 45px; min-width: 216px; padding: 17px 22px; border: 0; border-radius: 5px; background: var(--orange); color: #182822; font-size: 15px; font-weight: 800; box-shadow: 0 8px 30px #0002; transition: background .15s, transform .15s; }
+      .primary-button:hover { background: #ff815f; transform: translateY(-2px); }
+      .primary-button:disabled { opacity: .65; cursor: wait; transform: none; }
+      .button-arrow { font-size: 22px; line-height: 1; }
+      .menu-records { margin-top: 30px; display: flex; gap: 33px; }
+      .menu-records strong { display: block; margin-top: 8px; font-size: 19px; font-weight: 500; }
+      .menu-bottom { position: fixed; bottom: 33px; left: 38px; right: 38px; display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; pointer-events: none; }
+      .track-facts { display: flex; gap: 30px; }
+      .track-facts b { display: block; font-size: 24px; font-weight: 500; margin-bottom: 5px; }
+      .menu-controls { font-size: 12px; line-height: 1.8; color: #d6ded6; text-align: right; }
+      kbd { display: inline-block; min-width: 20px; padding: 2px 5px; border: 1px solid #ffffff40; border-radius: 3px; font: 11px ui-monospace, monospace; text-align: center; color: #f5f3e9; }
+      #hud { position: fixed; inset: 0; pointer-events: none; }
+      .lap-hud { position: absolute; top: 26px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 22px; padding: 14px 24px; background: var(--glass); border: 1px solid #ffffff1f; border-radius: 7px; backdrop-filter: blur(12px); }
+      .lap-number { font-size: 32px; font-weight: 600; line-height: 1.1; white-space: nowrap; }
+      .lap-number small { color: #9db0a6; font-size: 17px; }
+      .lap-progress { display: flex; gap: 5px; margin-top: 9px; }
+      .lap-progress i { display: block; width: 27px; height: 3px; background: #ffffff25; }
+      .lap-progress i.active { background: var(--orange); }
+      .lap-progress i.complete { background: #b8d6b8; }
+      .lap-time { font-size: 25px; margin-top: 6px; min-width: 126px; }
+      .right-hud { position: absolute; top: 102px; right: 38px; width: 215px; display: grid; gap: 12px; }
+      .minimap-hud, .times-hud { background: var(--glass); border: 1px solid #ffffff1f; border-radius: 7px; backdrop-filter: blur(12px); }
+      .minimap-hud { padding: 14px 14px 12px; }
+      .minimap-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+      .minimap-legend { display: flex; align-items: center; gap: 6px; font-size: 10px; color: #cad4cc; }
+      .minimap-legend i { width: 6px; height: 6px; border-radius: 50%; background: var(--orange); }
+      #minimap { display: block; width: 100%; height: auto; margin-top: 8px; overflow: hidden; }
+      .times-hud { padding: 19px 20px; }
+      .time-row { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-top: 14px; font-size: 12px; color: #cad4cc; }
+      .time-row > span { white-space: nowrap; }
+      .time-row strong { font-size: 14px; font-weight: 500; color: var(--ink); }
+      .time-row:first-child { display: block; margin: 0 0 17px; padding-bottom: 15px; border-bottom: 1px solid #ffffff20; }
+      .time-row:first-child strong { display: block; margin-top: 8px; font-size: 19px; }
+      .time-row.record strong { color: #ff9579; }
+      .speed-hud { position: absolute; left: 38px; bottom: 33px; padding: 19px 23px; min-width: 202px; background: var(--glass); border-radius: 7px; border: 1px solid #ffffff1f; backdrop-filter: blur(12px); }
+      .speed-value { font-size: 68px; font-weight: 600; letter-spacing: -.07em; line-height: 1; }
+      .speed-value small { font-size: 11px; letter-spacing: .08em; color: #9eb2a5; margin-left: 13px; }
+      .speed-meter { margin-top: 17px; height: 4px; background: #ffffff25; overflow: hidden; }
+      .speed-meter span { display: block; height: 100%; width: 0; background: var(--orange); }
+      .speed-footer { margin-top: 11px; display: flex; justify-content: space-between; font-size: 10px; letter-spacing: .11em; color: #acbdb0; }
+      .status-dot { width: 5px; height: 5px; border-radius: 50%; background: #a7d9a9; display: inline-block; margin-right: 6px; }
+      #surface-status.off-road { color: #ffb082; }
+      #surface-status.off-road .status-dot { background: var(--orange); }
+      .driving-controls { position: absolute; right: 38px; bottom: 34px; text-align: right; font-size: 11px; line-height: 2.1; color: #e3e9df; text-shadow: 0 1px 4px #0008; }
+      #notice { position: absolute; left: 50%; bottom: 46px; transform: translateX(-50%); padding: 13px 20px; background: var(--glass); border: 1px solid #ffffff28; border-radius: 5px; font-size: 13px; white-space: nowrap; text-align: center; }
+      #notice.warning { color: #ffd1a7; border-color: #ff925866; }
+      #dialog-layer { position: fixed; inset: 0; display: grid; place-items: center; background: #0a201b80; backdrop-filter: blur(5px); padding: 20px; }
+      .dialog { width: min(440px, 100%); padding: 36px; background: #172e28; border: 1px solid #ffffff25; border-radius: 12px; box-shadow: 0 24px 80px #0004; }
+      .dialog h2 { margin: 12px 0; font-size: 35px; letter-spacing: -.05em; }
+      .dialog p { color: #bdcbbf; font-size: 13px; line-height: 1.8; }
+      #result-total { margin: 23px 0; font-size: 43px; color: var(--orange); }
+      #result-laps { display: grid; gap: 12px; padding: 17px 0; margin: 0 0 24px; list-style: none; border-top: 1px solid #ffffff20; border-bottom: 1px solid #ffffff20; }
+      #result-laps li { display: flex; justify-content: space-between; font-size: 13px; }
+      .dialog .primary-button { width: 100%; }
+      #record-note { min-height: 20px; color: #ffac8c; }
+      #error { position: fixed; inset: 0; display: grid; place-items: center; padding: 30px; background: #142e29; z-index: 10; }
+      #error p { max-width: 470px; line-height: 1.8; color: #c5d1c5; }
+      @media (max-width: 850px) {
+        header { top: 20px; left: 22px; right: 22px; }
+        .brand-divider, .brand-track { display: none; }
+        .lap-hud { top: 84px; padding: 11px 18px; gap: 18px; }
+        .right-hud { top: 180px; right: 22px; width: 190px; }
+        .speed-hud { left: 22px; bottom: 22px; min-width: 170px; padding: 16px; }
+        .speed-value { font-size: 54px; }
+        .driving-controls { right: 22px; bottom: 22px; }
+        #notice { bottom: 170px; max-width: 92vw; white-space: normal; }
+        .menu-bottom { left: 22px; right: 22px; bottom: 22px; }
+        .track-facts { gap: 20px; }
+        .menu-controls { max-width: 260px; }
+      }
+      @media (max-height: 620px) {
+        .right-hud { top: 84px; width: 190px; gap: 8px; }
+        .minimap-hud { padding: 10px 12px; }
+        .times-hud { padding: 12px 14px; }
+        .time-row { margin-top: 10px; }
+        .time-row:first-child { margin-bottom: 12px; padding-bottom: 12px; }
+        #menu { transform: translateY(-45%); }
+        h1 { font-size: 46px; margin-bottom: 12px; }
+        .menu-kicker { margin-bottom: 12px; }
+        .menu-description { margin-bottom: 16px; font-size: 12px; }
+        .menu-records { margin-top: 16px; }
+        .menu-bottom { bottom: 18px; }
+        .dialog { padding: 24px; }
+      }
+    </style>
+    <script type="importmap">
+      { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js" } }
+    </script>
+  </head>
+  <body class="menu-open">
+    <div id="viewport" aria-label="3D 레이싱 트랙"></div>
+    <div class="vignette"></div>
+    <header>
+      <div class="brand"><span class="brand-mark" aria-hidden="true"></span><span class="brand-name">OVAL</span><span class="brand-divider"></span><span class="brand-track eyebrow mono">THE GARDEN CIRCUIT</span></div>
+      <div id="race-actions" class="header-actions" hidden><button id="pause-button" class="quiet-button">Ⅱ 일시정지</button><button id="restart-button" class="quiet-button">↻ 재시작</button></div>
+      <span id="menu-edition" class="eyebrow mono">A LITTLE FASTER. EVERY LAP.</span>
+    </header>
+    <main id="menu">
+      <div class="menu-kicker"><span class="line"></span><span class="eyebrow mono">SINGLE PLAYER / TIME ATTACK</span></div>
+      <h1>한 바퀴 더.<br /><em>더 빠르게.</em></h1>
+      <p class="menu-description">초록빛 서킷, 당신의 차, 그리고 3바퀴.<br />커브를 읽고 페이스를 찾아 나만의 기록을 만들어보세요.</p>
+      <button id="start-button" class="primary-button" disabled><span id="start-label">트랙 준비 중…</span><span class="button-arrow" aria-hidden="true">↗</span></button>
+      <div class="menu-records"><div><span class="eyebrow">최고 랩</span><strong id="menu-best-lap" class="mono">—</strong></div><div><span class="eyebrow">최고 완주</span><strong id="menu-best-race" class="mono">—</strong></div></div>
+    </main>
+    <div id="menu-bottom" class="menu-bottom">
+      <div class="track-facts mono"><div><b>01</b><span class="eyebrow">CIRCUIT</span></div><div><b>03</b><span class="eyebrow">LAPS</span></div><div><b>∞</b><span class="eyebrow">RETRIES</span></div></div>
+      <div class="menu-controls"><kbd>W</kbd> <kbd>↑</kbd> 가속 &nbsp; <kbd>S</kbd> <kbd>↓</kbd> 브레이크<br /><kbd>A</kbd> <kbd>←</kbd> <kbd>D</kbd> <kbd>→</kbd> 조향 &nbsp; · &nbsp; <kbd>ESC</kbd> 일시정지<br />트랙을 벗어난 랩은 무효 · 출발선에서 다시 도전</div>
+    </div>
+    <div id="hud" hidden>
+      <div class="lap-hud"><div><div class="eyebrow mono">LAP</div><div class="lap-number mono"><span id="lap-number">01</span><small> / 03</small></div><div id="lap-progress" class="lap-progress"><i class="active"></i><i></i><i></i></div></div><div><div class="eyebrow">현재 랩</div><div id="lap-time" class="lap-time mono">00:00.000</div></div></div>
+      <div class="right-hud">
+        <section class="minimap-hud" aria-label="트랙 미니맵">
+          <div class="minimap-heading"><span class="eyebrow mono">CIRCUIT / 01</span><span class="minimap-legend"><i aria-hidden="true"></i>내 차</span></div>
+          <svg id="minimap" viewBox="-94 -62 188 124" role="img" aria-label="타원형 트랙, 출발선과 내 차의 실시간 위치 및 진행 방향">
+            <ellipse id="minimap-outer" fill="#52685d" stroke="#b4c5ac" stroke-width=".9" />
+            <ellipse id="minimap-inner" fill="#18372d" stroke="#b4c5ac" stroke-width=".9" />
+            <ellipse id="minimap-center" fill="none" stroke="#d1dbc1" stroke-width=".6" stroke-dasharray="3 5" opacity=".55" />
+            <line id="minimap-start" stroke="#f5f3e9" stroke-width="2" />
+            <g id="minimap-car"><circle r="7" fill="#172d2b" stroke="#ff633b" stroke-width="1" /><path d="M 0 -5 L 4 4 L 0 2 L -4 4 Z" fill="#ff633b" /></g>
+          </svg>
+        </section>
+        <div class="times-hud"><div class="time-row"><span>총 경과 시간</span><strong id="total-time" class="mono">00:00.000</strong></div><div class="time-row"><span>직전 랩</span><strong id="last-lap" class="mono">—</strong></div><div class="time-row record"><span>최고 랩</span><strong id="best-lap" class="mono">—</strong></div><div class="time-row record"><span>최고 완주</span><strong id="best-race" class="mono">—</strong></div></div>
+      </div>
+      <div class="speed-hud"><div class="speed-value mono"><span id="speed">000</span><small>KM/H</small></div><div class="speed-meter"><span id="speed-bar"></span></div><div class="speed-footer mono"><span>RWD / 01</span><span id="surface-status"><i class="status-dot"></i>TRACK</span></div></div>
+      <div class="driving-controls"><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> &nbsp; 또는 &nbsp; <kbd>↑</kbd> <kbd>←</kbd> <kbd>↓</kbd> <kbd>→</kbd><br />가속 / 브레이크 / 조향 &nbsp; · &nbsp; <kbd>ESC</kbd> 일시정지</div>
+      <div id="notice" role="status" aria-live="polite" hidden></div>
+    </div>
+    <div id="dialog-layer" hidden>
+      <section id="pause-dialog" class="dialog" role="dialog" aria-modal="true" aria-labelledby="pause-title" hidden><div class="eyebrow mono">TAKE A BREATH</div><h2 id="pause-title">잠시 쉬어가기</h2><p>차량과 타이머가 멈췄습니다.<br />준비되면 다시 트랙으로 돌아가세요.</p><button id="resume-button" class="primary-button"><span>계속 달리기</span><span class="button-arrow" aria-hidden="true">→</span></button></section>
+      <section id="finish-dialog" class="dialog" role="dialog" aria-modal="true" aria-labelledby="finish-title" hidden><div class="eyebrow mono">CHECKERED FLAG / 03 OF 03</div><h2 id="finish-title">완주했습니다.</h2><div id="result-total" class="mono">00:00.000</div><ul id="result-laps"></ul><p id="record-note"></p><button id="race-again-button" class="primary-button"><span>한 번 더 달리기</span><span class="button-arrow" aria-hidden="true">↗</span></button></section>
+    </div>
+    <div id="error" role="alert" hidden><div><span class="eyebrow mono">PIT STOP</span><h2>트랙을 불러오지 못했습니다.</h2><p id="error-message"></p><button class="primary-button" onclick="location.reload()">다시 불러오기 ↻</button></div></div>
+    <script type="module">
+      try {
+        const { boot } = await import('./main.js');
+        boot();
+      } catch (error) {
+        console.error(error);
+        document.getElementById('error').hidden = false;
+        document.getElementById('error-message').textContent = '로컬 HTTP 서버로 접속했는지, 인터넷 연결과 브라우저의 WebGL 지원을 확인하세요. ' + error.message;
+      }
+    </script>
+  </body>
+</html>
