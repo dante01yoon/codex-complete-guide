@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7f8f2">
+  <title>하루 한 칸 · 습관 트래커</title>
+  <script src="theme.js"></script>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect rx='18' width='64' height='64' fill='%232f6853'/%3E%3Cpath d='m17 32 10 10 21-23' fill='none' stroke='white' stroke-width='6'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="app.mjs"></script>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <a class="brand" href="./"><span class="brand-mark" aria-hidden="true">✓</span> 하루 한 칸</a>
+      <div class="header-tools">
+        <span class="local-badge"><span aria-hidden="true">●</span> 이 브라우저에 저장</span>
+        <div class="theme-control">
+          <label for="theme-select">화면 테마</label>
+          <select id="theme-select">
+            <option value="system">시스템</option>
+            <option value="light">라이트</option>
+            <option value="dark">다크</option>
+          </select>
+        </div>
+      </div>
+    </header>
+    <p id="theme-notice" class="theme-notice" role="status"></p>
+    <span id="theme-announcement" class="sr-only" role="status" aria-live="polite"></span>
+    <section class="intro">
+      <p class="eyebrow">작은 실천, 쌓이는 변화</p>
+      <h1>오늘도 한 칸 채워 볼까요?</h1>
+      <p class="subtext">완벽한 하루보다, 꾸준한 한 걸음.<br class="mobile-break"> 나만의 습관을 가볍게 기록하세요.</p>
+    </section>
+    <p id="storage-error" class="error" role="alert" hidden></p>
+    <section class="summary" aria-label="오늘의 실천 현황">
+      <div><p id="today-label" class="today-label"></p><h2>오늘의 실천</h2></div>
+      <div class="summary-right"><p><strong id="done-count">0</strong><span id="total-count"> / 0개 완료</span></p><div class="progress" role="progressbar" aria-label="오늘의 완료율" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="progress-fill"></span></div><p id="summary-message" class="summary-message"></p></div>
+    </section>
+    <section class="habits-section" aria-labelledby="habits-heading">
+      <div class="section-heading"><h2 id="habits-heading">나의 습관 <span id="habit-count">0</span></h2><span>하루에 한 번, 나를 위한 약속</span></div>
+      <form id="add-form" class="add-form">
+        <label class="sr-only" for="habit-name">새 습관 이름</label>
+        <input id="habit-name" name="name" maxlength="60" required placeholder="어떤 습관을 만들고 싶나요? 예: 책 10쪽 읽기" autocomplete="off">
+        <button class="primary" type="submit"><span aria-hidden="true">＋</span> 습관 추가</button>
+      </form>
+      <p id="announcement" class="announcement" role="status" aria-live="polite"></p>
+      <div id="habits" class="habit-list"></div>
+      <div id="empty-state" class="empty-state"><span class="empty-icon" aria-hidden="true">✦</span><h3>작은 습관 하나로 시작해요</h3><p>산책하기, 물 마시기, 책 읽기…<br>매일 지키고 싶은 나만의 약속을 추가해 보세요.</p></div>
+    </section>
+    <footer>기록은 이 브라우저에만 보관돼요. 브라우저 데이터를 삭제하면 기록도 사라집니다.</footer>
+  </main>
+  <dialog id="edit-dialog" aria-labelledby="edit-title">
+    <form id="edit-form"><h2 id="edit-title">습관 이름 수정</h2><label for="edit-name">습관 이름</label><input id="edit-name" maxlength="60" required autocomplete="off"><div class="dialog-actions"><button type="button" class="secondary" data-close>취소</button><button type="submit" class="primary">저장</button></div></form>
+  </dialog>
+  <dialog id="delete-dialog" aria-labelledby="delete-title" aria-describedby="delete-description">
+    <h2 id="delete-title">습관을 삭제할까요?</h2><p id="delete-description"></p><p class="subtext">이 습관의 모든 기록이 함께 삭제되며 되돌릴 수 없습니다.</p><div class="dialog-actions"><button type="button" class="secondary" data-close>취소</button><button type="button" class="danger" id="confirm-delete">삭제</button></div>
+  </dialog>
+</body>
+</html>
