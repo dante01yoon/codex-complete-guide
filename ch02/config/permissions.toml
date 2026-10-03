@@ -1,0 +1,10 @@
+# 02.6 권한 설정 예시 (config.toml에 추가)
+
+# 기본 권한(Ask for approval)과 같은 조합
+sandbox_mode = "workspace-write"
+approval_policy = "on-request"
+
+# 승인 요청을 자동 검토(Approve for me)에 맡기려면 아래 줄도 추가
+# approvals_reviewer = "auto_review"
+
+# 참고: approval_policy = "untrusted"는 더 이상 지원되지 않습니다.

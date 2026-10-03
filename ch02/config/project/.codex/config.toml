@@ -1,0 +1,3 @@
+# 프로젝트 설정: <프로젝트 폴더>/.codex/config.toml
+# codex-practice 폴더에서만 적용되는 설정 (폴더를 신뢰해야 적용됩니다)
+model_reasoning_effort = "high"

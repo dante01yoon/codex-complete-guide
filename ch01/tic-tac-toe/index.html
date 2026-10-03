@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>틱택토 · 둘이서 한 판</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #263b46;
+      background: #f3f1eb;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      min-height: 100svh;
+      display: grid;
+      place-items: center;
+      padding: 24px 16px;
+    }
+    main {
+      width: 100%;
+      max-width: 440px;
+      min-width: 0;
+      padding: 32px 24px 24px;
+      border: 1px solid #dddcd4;
+      border-radius: 24px;
+      background: #fffefb;
+      box-shadow: 0 12px 40px #263b4608;
+      text-align: center;
+    }
+    .eyebrow { margin: 0 0 8px; color: #65716f; font-size: 13px; letter-spacing: .08em; }
+    h1 { margin: 0; font-size: 36px; letter-spacing: -.06em; }
+    .intro { margin: 12px 0 24px; color: #65716f; font-size: 14px; line-height: 1.6; }
+    .players { display: flex; justify-content: center; gap: 8px; }
+    .player { padding: 8px 18px; border-radius: 999px; border: 1px solid #e6e5de; font-size: 13px; }
+    .player b { margin-right: 6px; font-size: 16px; }
+    .player-x b { color: #b54b36; }
+    .player-o b { color: #29677a; }
+    .player.active { background: #f0f3ed; border-color: #78947b; }
+    #status { margin: 20px 0; font-size: 19px; font-weight: 700; line-height: 1.5; }
+    .board {
+      width: 100%;
+      max-width: 360px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+    button { font: inherit; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+    .cell {
+      width: 100%;
+      min-width: 0;
+      aspect-ratio: 1;
+      display: grid;
+      place-items: center;
+      padding: 0;
+      border: 1px solid #dedfd6;
+      border-radius: 14px;
+      background: #f5f5ef;
+      color: #263b46;
+      font: 600 clamp(32px, 10vw, 52px) / 1 ui-monospace, monospace;
+      cursor: pointer;
+    }
+    .cell[data-mark="X"] { color: #b54b36; }
+    .cell[data-mark="O"] { color: #29677a; }
+    .cell[aria-disabled="true"] { cursor: default; }
+    .cell.winning { background: #e3eddf; border: 2px solid #6b886b; }
+    button:focus-visible { outline: 3px solid #29677a; outline-offset: 3px; }
+    @media (hover: hover) {
+      .cell[aria-disabled="false"]:hover { background: #e9ede3; border-color: #78947b; }
+      #restart:hover { background: #36515d; }
+    }
+    #restart {
+      display: block;
+      width: 100%;
+      max-width: 360px;
+      margin: 24px auto 0;
+      min-height: 48px;
+      padding: 12px 16px;
+      border: 0;
+      border-radius: 12px;
+      background: #263b46;
+      color: #fffefb;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .hint { margin: 18px 0 0; font-size: 12px; line-height: 1.7; color: #65716f; }
+    noscript p { color: #b54b36; }
+    @media (max-width: 360px) {
+      main { padding: 28px 16px 20px; }
+      .board { gap: 6px; }
+    }
+  </style>
+</head>
+<body>
+  <main aria-labelledby="title">
+    <p class="eyebrow">둘이서 한 판</p>
+    <h1 id="title">틱택토</h1>
+    <p class="intro">빈칸을 골라, 같은 기호 세 개를 이어 보세요.</p>
+    <div class="players" aria-label="플레이어">
+      <span class="player player-x active"><b>X</b>플레이어 1</span>
+      <span class="player player-o"><b>O</b>플레이어 2</span>
+    </div>
+    <p id="status" role="status" aria-live="polite" aria-atomic="true">X 차례입니다</p>
+    <div class="board" role="group" aria-label="틱택토 게임판" aria-describedby="status">
+      <button class="cell" type="button" aria-label="1행 1열, 빈칸" aria-disabled="false"></button>
+      <button class="cell" type="button" aria-label="1행 2열, 빈칸" aria-disabled="false"></button>
+      <button class="cell" type="button" aria-label="1행 3열, 빈칸" aria-disabled="false"></button>
+      <button class="cell" type="button" aria-label="2행 1열, 빈칸" aria-disabled="false"></button>
+      <button class="cell" type="button" aria-label="2행 2열, 빈칸" aria-disabled="false"></button>
+      <button class="cell" type="button" aria-label="2행 3열, 빈칸" aria-disabled="false"></button>
+      <button class="cell" type="button" aria-label="3행 1열, 빈칸" aria-disabled="false"></button>
+      <button class="cell" type="button" aria-label="3행 2열, 빈칸" aria-disabled="false"></button>
+      <button class="cell" type="button" aria-label="3행 3열, 빈칸" aria-disabled="false"></button>
+    </div>
+    <button id="restart" type="button">다시 시작</button>
+    <p class="hint">가로 · 세로 · 대각선으로 세 칸을 완성하면 승리!<br>X가 먼저 시작하고, 번갈아 한 칸씩 놓아요.</p>
+    <noscript><p>게임을 하려면 브라우저의 JavaScript를 켜 주세요.</p></noscript>
+  </main>
+  <script>
+    (() => {
+      const cells = Array.from(document.querySelectorAll('.cell'));
+      const status = document.getElementById('status');
+      const restart = document.getElementById('restart');
+      const players = document.querySelectorAll('.player');
+      const winningLines = [
+        [0, 1, 2], [3, 4, 5], [6, 7, 8],
+        [0, 3, 6], [1, 4, 7], [2, 5, 8],
+        [0, 4, 8], [2, 4, 6]
+      ];
+      let board = Array(9).fill('');
+      let currentPlayer = 'X';
+      let gameOver = false;
+      let winningCells = [];
+
+      function render() {
+        cells.forEach((cell, index) => {
+          cell.textContent = board[index];
+          cell.dataset.mark = board[index];
+          cell.setAttribute('aria-label',
+            `${Math.floor(index / 3) + 1}행 ${index % 3 + 1}열, ${board[index] || '빈칸'}`);
+          // Keep every cell focusable so keyboard users can inspect the final board.
+          cell.setAttribute('aria-disabled', String(gameOver || board[index] !== ''));
+          cell.classList.toggle('winning', winningCells.includes(index));
+        });
+        players.forEach((player, index) => {
+          player.classList.toggle('active', !gameOver && currentPlayer === (index === 0 ? 'X' : 'O'));
+        });
+        status.textContent = winningCells.length
+          ? `${currentPlayer}가 승리했습니다!`
+          : gameOver ? '무승부입니다' : `${currentPlayer} 차례입니다`;
+      }
+
+      function play(index) {
+        if (gameOver || board[index] !== '') return;
+        board[index] = currentPlayer;
+        // Check victory before a full board: the ninth move can still win.
+        winningCells = winningLines
+          .filter(line => line.every(position => board[position] === currentPlayer))
+          .flat();
+        if (winningCells.length || board.every(Boolean)) {
+          gameOver = true;
+        } else {
+          currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+        }
+        render();
+      }
+
+      cells.forEach((cell, index) => cell.addEventListener('click', () => play(index)));
+      restart.addEventListener('click', () => {
+        board = Array(9).fill('');
+        currentPlayer = 'X';
+        gameOver = false;
+        winningCells = [];
+        render();
+        cells[0].focus();
+      });
+      render();
+    })();
+  </script>
+</body>
+</html>

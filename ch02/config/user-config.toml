@@ -1,0 +1,10 @@
+# 사용자 설정: ~/.codex/config.toml (Windows: %USERPROFILE%\.codex\config.toml)
+# 모든 프로젝트에 적용되는 기본 설정
+model = "gpt-6.1-sol"
+model_reasoning_effort = "medium"
+
+# 02.2 리뷰에만 다른 모델 쓰기 (필요할 때 주석 해제)
+# review_model = "gpt-6-astra"
+
+# 02.4 웹 검색 방식: "cached"(기본값) | "live" | "disabled"
+# web_search = "live"

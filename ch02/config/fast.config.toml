@@ -1,0 +1,4 @@
+# 프로필: ~/.codex/fast.config.toml
+# 실행: codex --profile fast
+model = "gpt-6-luna"
+model_reasoning_effort = "low"
