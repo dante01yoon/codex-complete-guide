@@ -64,10 +64,10 @@
 
 ## 실행 방법과 코드 지도
 
-프로젝트 루트: `/Users/dante/Documents/Codex/2026-10-02/ch05/habit-tracker`
+프로젝트 루트: `~/Documents/habit-tracker`
 
 ```sh
-cd /Users/dante/Documents/Codex/2026-10-02/ch05/habit-tracker
+cd ~/Documents/habit-tracker
 node server.mjs
 ```
 
