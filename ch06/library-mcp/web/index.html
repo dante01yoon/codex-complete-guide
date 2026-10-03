@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#184f42">
+  <title>도서관 지도 — 전국 도서관 데이터 탐색</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23184f42'/%3E%3Ctext x='14' y='45' font-size='38' fill='white'%3E책%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css" crossorigin="">
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js" crossorigin=""></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <header class="site-header"><a class="brand" href="#"><span class="brand-icon" aria-hidden="true">▥</span> 도서관 지도 <span class="brand-en">LIBRARY ATLAS</span></a><span class="source-tag"><i></i> 전국도서관 데이터</span></header>
+  <main>
+    <section class="intro"><div><p class="eyebrow">책과 공간, 데이터로 만나다</p><h1>우리 곁의 도서관을<br class="mobile-break"> 발견하세요<span>.</span></h1><p class="intro-copy">전국의 도서관과 책의 분포를 살펴보고, 지역별 도서관을 지도에서 찾아보세요.</p></div><span class="intro-number" aria-hidden="true">18<span>REGIONS</span></span></section>
+    <p id="load-status" role="status">도서관 데이터를 불러오는 중입니다…</p>
+    <section class="summary" aria-label="전국 데이터 요약"><article><span class="stat-label">전국 도서관</span><p><strong id="total-libraries">—</strong><span>개</span></p><small>원본 데이터에 등록된 도서관</small></article><article><span class="stat-label">도서 장서</span><p><strong id="total-books">—</strong><span>권</span></p><small>자료수(도서) 기준</small></article><article><span class="stat-label">시도별 데이터</span><p><strong id="total-regions">—</strong><span>개 지역</span></p><small>원본 시도 표기를 그대로 유지</small></article></section>
+    <section class="distribution" aria-labelledby="distribution-title"><div class="section-heading"><div><span class="section-no">01 / DISTRIBUTION</span><h2 id="distribution-title">어디에, 얼마나 있을까요?</h2></div><p>막대를 누르면 해당 지역을 지도에서 볼 수 있어요.</p></div><div class="chart-grid"><article class="chart-card"><div class="chart-heading"><h3><i class="dot green"></i> 시도별 도서관 수</h3><span>단위: 개 · 많은 순</span></div><div id="library-chart" class="chart" aria-label="시도별 도서관 수 막대 차트"></div></article><article class="chart-card"><div class="chart-heading"><h3><i class="dot orange"></i> 시도별 장서 수</h3><span>단위: 권 · 많은 순</span></div><div id="book-chart" class="chart" aria-label="시도별 장서 수 막대 차트"></div></article></div></section>
+    <section class="explore" aria-labelledby="explore-title"><div class="section-heading"><div><span class="section-no">02 / EXPLORE</span><h2 id="explore-title">지도로 만나는 도서관</h2></div><button id="reset" class="text-button" disabled>필터 초기화 ↗</button></div><div class="filters"><label class="region-field"><span>지역 선택</span><select id="region" aria-label="지역 선택" disabled><option value="">전국 · 모든 시도</option></select></label><label class="search-field"><span>도서관 이름 검색</span><div><span aria-hidden="true">⌕</span><input id="search" aria-label="도서관 이름 검색" type="search" placeholder="찾고 싶은 도서관 이름을 입력하세요" disabled autocomplete="off"></div></label></div><div class="explore-grid"><div class="map-card"><div id="map" aria-label="3D 도서관 지도"></div><div class="map-toolbar" aria-label="지도 시점 조절"><button id="tilt-map" type="button" disabled>기울기 55°</button><button id="rotate-map" type="button" disabled>회전 ↻</button><button id="home-map" type="button" disabled>지역 전체</button></div><div class="map-caption"><span><i class="dot green"></i> 장서 1만 권 = 기둥 20m</span><span id="map-count">좌표 확인 중</span></div><p id="map-status" role="status" hidden></p><p class="map-help">우클릭 드래그로 회전·기울기 조절 · 건물은 확대 시 표시</p></div><aside class="results"><div class="results-heading"><h3 id="results-title">전국 도서관</h3><span id="result-count" role="status">—</span></div><p class="results-hint">도서관을 누르면 지도에서 위치를 확인할 수 있어요.</p><div id="result-list" class="result-list"></div><div class="pagination"><button id="prev" disabled aria-label="이전 결과">←</button><span id="page-info">—</span><button id="next" disabled aria-label="다음 결과">→</button></div></aside></div></section>
+    <footer><div><strong>데이터 안내</strong><p>library-mcp 도구로 조회한 JSON 스냅샷 · 조회일 2026.10.03<br>장서는 도서만 합산합니다. 좌표가 없거나 올바르지 않은 도서관도 검색 결과에는 포함됩니다.<br>전라남도와 전남광주통합특별시는 원본의 서로 다른 집계 그룹으로 표시합니다. 기준일은 도서관마다 다릅니다. 동일 이름의 원본 행도 임의로 합치지 않습니다.</p><p id="data-note"></p></div><a href="data/libraries.json" download>원본 조회 데이터 JSON ↓</a></footer>
+  </main>
+</body>
+</html>

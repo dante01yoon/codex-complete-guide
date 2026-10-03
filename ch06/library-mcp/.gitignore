@@ -1,0 +1,6 @@
+node_modules/
+dist/
+*.csv
+web/data/
+verification-result.json
+web/verification.json
