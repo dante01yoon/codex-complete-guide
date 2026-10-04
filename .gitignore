@@ -1,2 +1,5 @@
 .DS_Store
 auth.json
+
+# 책 그림 원본(로컬 보관용)
+book-assets/
