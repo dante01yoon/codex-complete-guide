@@ -66,7 +66,7 @@
 body { margin: 0; font-size: 1.125rem; line-height: 1.75; word-break: keep-all; overflow-wrap: anywhere; }
 a { text-decoration: none; }
 a, button { transition: color 120ms ease-out, background-color 120ms ease-out, border-color 120ms ease-out; }
-a:focus-visible, button:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; box-shadow: none; }
+a:focus-visible, button:focus-visible, select:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; box-shadow: none; }
 h1, h2, h3, p { margin: 0; }
 h1 { font-size: 1.75rem; font-weight: 700; line-height: 1.4; letter-spacing: -0.02em; }
 h2 { font-size: 1.5rem; font-weight: 600; line-height: 1.45; letter-spacing: -0.01em; }
@@ -78,10 +78,11 @@ h2 { font-size: 1.5rem; font-weight: 600; line-height: 1.45; letter-spacing: -0.
 nav { display: flex; gap: 1rem; }
 nav a { min-width: 2.75rem; min-height: 2.75rem; display: inline-flex; align-items: center; justify-content: center; font-size: 0.875rem; font-weight: 500; }
 nav a:hover, .wordmark:hover { color: var(--primary-hover); text-decoration: underline; text-underline-offset: 0.25rem; }
-nav a:first-child { color: var(--primary); text-decoration: underline; text-underline-offset: 0.25rem; }
+nav a[aria-current="page"] { color: var(--primary); text-decoration: underline; text-underline-offset: 0.25rem; }
 .theme-picker { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
 .label, .eyebrow { font-size: 0.875rem; font-weight: 500; line-height: 1.5; }
 .theme-picker > .label { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.theme-picker select { min-height: 2.75rem; padding: 0.5rem 0.75rem; border: 1px solid var(--control-border); border-radius: 0.25rem; color: var(--secondary-text); background: var(--card); font: inherit; font-size: 0.875rem; line-height: 1.5; cursor: pointer; }
 [data-slot="toggle-group"] { gap: 0.5rem; }
 [data-slot="toggle-group-item"] { min-height: 2.75rem; min-width: 2.75rem; height: auto; padding: 0.5rem; border: 1px solid var(--control-border); border-radius: 0.25rem; color: var(--secondary-text); background: var(--card); font-size: 0.875rem; line-height: 1.5; }
 [data-slot="toggle-group-item"][aria-pressed="true"] { color: var(--primary); border-color: var(--primary); background: var(--subtle); text-decoration: underline; text-underline-offset: 0.25rem; }
@@ -118,11 +119,24 @@ a[data-slot="badge"][aria-current="page"] { color: var(--primary); border-color:
 .post-page > [data-slot="button"] { width: fit-content; }
 .post-page article { display: flex; flex-direction: column; gap: 1.5rem; }
 .post-body { display: flex; flex-direction: column; gap: 1.5rem; }
+.about-main { display: flex; flex-direction: column; gap: 3rem; padding-top: 3rem; }
+.about-intro { display: flex; flex-direction: column; gap: 1.5rem; }
+.about-copy { color: var(--secondary-text); font-size: 1.125rem; line-height: 1.75; }
+.about-section { display: flex; flex-direction: column; gap: 1.5rem; }
+.about-topics { list-style: none; padding: 0; margin: 0; }
+.about-topics li { display: flex; flex-direction: column; gap: 0.25rem; padding-block: 1.5rem; }
+.about-topics li:first-child { padding-top: 0; }
+.about-topics li:last-child { padding-bottom: 0; }
+.about-topics li + li { border-top: 1px solid var(--border); }
+.about-topics h3 { font-size: 1.125rem; font-weight: 600; line-height: 1.5; }
+.about-posts-link { width: fit-content; color: var(--primary); text-decoration: underline; text-underline-offset: 0.25rem; }
+.about-posts-link:hover { color: var(--primary-hover); }
 @media (min-width: 768px) {
   .site-shell { padding: 3rem 2rem; }
   .site-header { flex-direction: row; align-items: center; justify-content: space-between; gap: 2rem; }
   .header-controls { gap: 2rem; }
   .home-main { gap: 4rem; padding-top: 4rem; }
+  .about-main { gap: 4rem; padding-top: 4rem; }
   h1 { font-size: 2.25rem; line-height: 1.35; }
   .journal-card-title { font-size: 1.375rem; }
   .site-footer { margin-top: 4rem; }

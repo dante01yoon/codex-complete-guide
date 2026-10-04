@@ -1,7 +1,6 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 type Theme = "system" | "light" | "dark";
 const isTheme = (value: string | undefined): value is Theme =>
@@ -43,18 +42,18 @@ export function ThemePicker() {
   const theme = useSyncExternalStore(subscribe, getSnapshot, () => "system");
   return (
     <div className="theme-picker">
-      <span id="theme-label" className="label">화면 테마</span>
-      <ToggleGroup aria-labelledby="theme-label" value={[theme]} onValueChange={(values) => {
-        const next = values[0];
+      <label htmlFor="screen-theme" className="label">화면 테마</label>
+      <select id="screen-theme" value={theme} onChange={(event) => {
+        const next = event.target.value;
         if (!isTheme(next)) return;
         applyTheme(next);
         try { localStorage.setItem("journal-theme", next); } catch {}
         window.dispatchEvent(new Event("journal-theme-change"));
       }}>
-        <ToggleGroupItem value="system">시스템</ToggleGroupItem>
-        <ToggleGroupItem value="light">라이트</ToggleGroupItem>
-        <ToggleGroupItem value="dark">다크</ToggleGroupItem>
-      </ToggleGroup>
+        <option value="system">시스템</option>
+        <option value="light">라이트</option>
+        <option value="dark">다크</option>
+      </select>
     </div>
   );
 }

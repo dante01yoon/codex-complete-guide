@@ -9,6 +9,8 @@
 | `blog-home/DESIGN.md` | UI UX Pro Max 스킬로 만든 디자인 기준(google-labs-code/design.md 형식) |
 | `blog-home/SETUP-AUDIT.md` | 스킬 설치 전에 코덱스가 남긴 점검 기록 |
 | `blog-home/src/data/posts.ts` | 예시 글 데이터(예약 작업이 추가한 글 포함) |
+| `blog-home/src/app/about/page.tsx` | 10.3에서 Build Web Apps 플러그인으로 만든 소개 페이지(콘셉트 이미지 승인 후 구현) |
+| `blog-home/src/components/site-nav.tsx` | 글·소개 링크가 있는 머리글 메뉴 |
 
 ## 실행 방법
 
@@ -26,6 +28,20 @@ http://localhost:3000 에서 확인합니다. 디자인 스킬(`shadcn`, `ui-ux-
 
 ```text
 이 폴더에 블로그 홈 페이지를 만들 준비를 해줘. 1) Next.js(App Router, 타입스크립트, 테일윈드)로 프로젝트를 만들고 shadcn/ui를 초기화해줘(npx shadcn@latest init). 2) 디자인용 스킬 두 개를 이 프로젝트의 .agents/skills에 설치해줘. 하나는 shadcn/ui 공식 스킬(npx skills add shadcn/ui), 다른 하나는 UI UX Pro Max 스킬(github.com/nextlevelbuilder/ui-ux-pro-max-skill)이야. 설치 전에 각 스킬의 SKILL.md와 scripts 폴더에서 외부로 데이터를 보내거나 파일을 지우는 명령이 없는지 확인하고 알려줘. 3) 마지막에 설치된 스킬 목록과 프로젝트 폴더 구조를 보여줘. 아직 화면은 만들지 마.
+```
+
+10.3 공식 플러그인 시연:
+
+```text
+@Build Web Apps 블로그에 소개 페이지(/about)를 새로 만들고 싶어. 먼저 Image Gen으로 콘셉트 이미지를 만들어 보여 주고, 내가 승인하기 전에는 코드를 수정하지 마. DESIGN.md의 색과 글꼴 규칙을 지켜 줘.
+```
+
+```text
+좋아, 이 콘셉트로 승인할게. 그대로 구현하고 브라우저에서 콘셉트와 비교해서 확인해 줘. 헤더에 소개 링크도 연결해 줘.
+```
+
+```text
+@Product Design 블로그 홈 화면(http://127.0.0.1:3000)을 감사(audit)해 줘. 코드는 수정하지 말고, 화면을 캡처한 근거와 함께 UX·디자인·접근성 문제를 우선순위별로 보고해 줘.
 ```
 
 DESIGN.md 만들기, 화면 만들기, Vercel 배포, 챗GPT Sites 게시, 예약 작업 지시는 책 10장 본문을 참고하세요.

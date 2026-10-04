@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import Link from "next/link";
 import { ThemePicker } from "@/components/theme-picker";
+import { SiteNav } from "@/components/site-nav";
 import { Separator } from "@/components/ui/separator";
 import "./globals.css";
 
@@ -25,7 +26,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <header className="site-header">
             <Link href="/" className="wordmark">Study Journal<span className="wordmark-dot" aria-hidden="true">.</span></Link>
             <div className="header-controls">
-              <nav aria-label="주 메뉴"><Link href="/#posts">글</Link><Link href="/#about">소개</Link></nav>
+              <SiteNav />
               <ThemePicker />
             </div>
           </header>
