@@ -40,6 +40,16 @@ $prompt-refiner 히트맵에서 지난달, 다음 달로 넘겨 가며 볼 수 �
 
 ### 마켓플레이스로 설치하기
 
+저장소를 받지 않고 GitHub에서 바로 추가할 수 있습니다. 저장소 맨 위의 `.agents/plugins/marketplace.json`에 prompt-kit을 등록해 두었습니다(책 [그림 07-14]).
+
+```sh
+codex plugin marketplace add dante01yoon/codex-complete-guide
+codex plugin add prompt-kit@codex-complete-guide
+codex plugin marketplace upgrade codex-complete-guide
+```
+
+저장소를 받아 `ch07` 폴더만 마켓플레이스로 추가해도 됩니다.
+
 이 저장소를 받은 뒤 `ch07` 폴더를 마켓플레이스로 추가합니다.
 
 ```sh
