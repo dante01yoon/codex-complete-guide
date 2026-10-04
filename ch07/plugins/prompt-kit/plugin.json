@@ -1,0 +1,20 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "prompt-kit",
+  "version": "0.1.0",
+  "description": "요청을 목표·맥락·제약 조건·완료 기준으로 다듬는 도구 모음",
+  "author": {
+    "name": "Dante"
+  },
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "프롬프트 키트",
+        "shortDescription": "요청을 목표·맥락·제약·완료 기준으로 정리",
+        "longDescription": "요청을 목표·맥락·제약 조건·완료 기준으로 다듬는 도구 모음",
+        "developerName": "Dante",
+        "category": "Productivity"
+      }
+    }
+  }
+}

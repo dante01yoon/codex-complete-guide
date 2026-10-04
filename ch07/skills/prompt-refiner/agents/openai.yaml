@@ -1,0 +1,3 @@
+interface:
+  display_name: "prompt-refiner"
+  short_description: "실제 프로젝트 파일을 읽고 요청을 네 가지 기준의 프롬프트로 정리"

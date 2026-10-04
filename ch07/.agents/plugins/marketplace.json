@@ -1,0 +1,20 @@
+{
+  "name": "codex-complete-guide-ch07",
+  "interface": {
+    "displayName": "코덱스 완벽 가이드 7장"
+  },
+  "plugins": [
+    {
+      "name": "prompt-kit",
+      "source": {
+        "source": "local",
+        "path": "./plugins/prompt-kit"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_USE"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
