@@ -25,11 +25,44 @@ cards와 columns의 INSERT·UPDATE·DELETE를 Supabase Realtime으로 구독한�
 
 카드 추가 시 마지막 position + 1을 사용하며 동시 추가는 같은 position이 생길 수 있다. 이 경우 id로 정렬한다. 이동은 보드 잠금으로 직렬화하고 해당 컬럼들의 순서를 0부터 다시 부여한다.
 
-## 임시 접근 정책
+## 접근 권한
 
-프로젝트 team-kanban에 세 마이그레이션을 적용했다. 두 번째 마이그레이션은 기본 보드·컬럼과 temp_anon_boards_all, temp_anon_columns_all, temp_anon_cards_all 정책을 생성한다. 세 번째 enable_kanban_realtime은 cards와 columns를 supabase_realtime publication에 추가한다.
+프로젝트 team-kanban에 여섯 마이그레이션을 적용했다. 최초 구조·시드·Realtime·Auth 변경에 이어 enforce_board_member_rls로 임시 정책을 제거하고, index_board_creators로 생성자 외래키 인덱스를 추가했다.
 
-세 정책은 실습용으로 로그인 없이 모든 행의 읽기·쓰기를 허용한다. 다음 로그인 실습에서 이 정책을 제거하고 팀 접근 정책으로 교체하며 anon 테이블 권한과 move_kanban_card 실행 권한도 회수한다. 로그인 UI나 사용자 테이블은 만들지 않았다.
+이전 Auth 실습에서는 임시 정책을 유지했지만, RLS 실습에서 테스트를 먼저 작성하고 정책 변경 전 87개 중 40개 실패를 확인한 뒤 모든 temp_ 정책을 제거했다. 현재는 보드 owner/member만 보드·컬럼·카드에 접근할 수 있다. 새 보드는 로그인 사용자가 생성할 수 있으며 생성자가 자동으로 owner가 된다. anon의 테이블 접근과 move_kanban_card 실행 권한을 회수했다.
+
+멤버 목록은 보드 참여자만 읽는다. 멤버 등록·내보내기는 owner 전용 RPC에서 처리하고 직접 board_members 쓰기는 차단한다. owner는 내보낼 수 없다. 보드의 생성자 필드는 클라이언트에서 변경할 수 없다.
+
+실제 Auth/JWT와 PostgREST 요청으로 동일한 테스트를 다시 실행해 87개 모두 통과했다. HTTP 200만으로 성공을 판단하지 않고 반환 행과 실제 저장 결과를 확인한다. 테스트용 fixture는 정리했고 기존 보드 데이터는 유지했다.
+
+- 기대 권한 표: docs/rls-expectations.md
+- 동일한 전후 테스트: scripts/test-rls.mjs
+- 전후 비교: docs/rls-comparison.md
+- 원본 결과: docs/rls-results-before.json, docs/rls-results-after.json
+
+```sh
+npm run test:rls -- after
+```
+
+테스트는 로컬 Supabase CLI 인증을 필요로 한다. 관리 키는 fixture 구성·확인·정리에만 사용하고 테스트 요청은 각 역할의 공개 키/JWT로 실행한다. 출력에 비밀번호·JWT·관리 키를 포함하지 않는다.
+
+## 로그인과 멤버
+
+Supabase Auth 이메일·비밀번호 회원가입, 로그인, 로그아웃을 지원한다. 새로고침 시 세션을 복원하며 로그인하지 않으면 보드 컴포넌트와 Realtime 구독을 실행하지 않는다. 일반 회원가입의 이메일 확인 흐름은 프로젝트 Auth 설정을 따른다.
+
+보드 목록은 로그인한 사용자의 board_members를 조회해 구성한다. 새 보드는 create_team_board로 생성하며 기본 컬럼 세 개와 owner 멤버를 같은 트랜잭션에서 만든다. boards.created_by의 기본값은 auth.uid()이고 DB 트리거가 생성자를 owner로 등록한다. 이전 실습 보드 '우리 팀 보드'에는 Alice를 owner로 연결했다.
+
+owner는 가입한 사용자의 정확한 이메일을 입력해 멤버를 초대한다. 이메일 발송이나 계정 생성 초대가 아니라 기존 가입자를 보드 멤버로 즉시 등록하는 기능이다. invite_board_member 함수는 DB에서도 owner 여부를 검사하며 중복 초대를 처리한다. Auth 사용자 조회와 멤버 추가는 private 스키마의 권한 제한 함수에서 수행한다. 브라우저에는 publishable 키만 사용한다.
+
+테스트 이메일:
+
+- alice@team-kanban.example
+- bob@team-kanban.example
+- carol@team-kanban.example (기존 보드의 비멤버 역할로 테스트)
+
+세 계정은 Admin Auth API로 email_confirm=true 상태로 생성했다. 프로젝트 전체 이메일 확인 설정은 변경하지 않았다. 비밀번호는 .env.local의 TEST_ALICE_PASSWORD, TEST_BOB_PASSWORD, TEST_CAROL_PASSWORD에만 저장하며 VITE_ 접두사를 사용하지 않는다. 테스트 이메일 변수도 같은 파일에 있다. 비밀번호는 UI나 문서에 표시하지 않는다.
+
+scripts/seed-test-users.mjs는 로컬 Supabase CLI 인증을 이용해 테스트 계정을 준비하고 로그인을 검증한다. 관리 키는 프로세스 메모리에서만 사용하며 .env.local이나 브라우저에 저장하지 않는다. 이미 존재하는 계정의 비밀번호를 변경하지 않는다.
 
 ## 검증
 
@@ -43,6 +76,10 @@ cards와 columns의 INSERT·UPDATE·DELETE를 Supabase Realtime으로 구독한�
 - columns UPDATE도 DB에서 완료 컬럼명을 잠시 변경한 뒤 원래 이름으로 복원하여 두 탭의 자동 반영 PASS. 최종 컬럼명은 원래대로 유지했다. 네트워크 차단·재연결 시나리오는 NOT_RUN.
 - 모바일 390 × 844에서 단일 컬럼 레이아웃 확인. 모바일 터치 드래그는 NOT_RUN.
 - Supabase 보안 advisor 결과 0건. 이는 실습용 공개 정책의 운영 안전성을 의미하지 않는다.
+- Auth 단계 PASS: 미로그인 로그인 화면, 회원가입 폼 전환, Alice 로그인 → Bob 초대 → owner/member 목록 확인, 로그아웃, Bob 로그인 및 초대받은 보드 접근, 새로고침 후 세션 유지.
+- DB 기능 검증 PASS: authenticated 보드 생성 시 owner 자동 등록 및 기본 컬럼 생성(롤백), Bob의 owner 초대 함수 호출 거부(롤백), 기존 temp_anon_* 정책과 두 계정 이메일 확인 완료 상태 확인.
+- 회원가입 실제 제출·메일 수신 전체 흐름은 NOT_RUN. 테스트 계정은 이메일 확인을 건너뛰는 Admin API로 생성했다. 멤버별 RLS 실제 DB 테스트는 변경 전 47 PASS / 40 FAIL, 변경 후 87 PASS / 0 FAIL / 0 BLOCKED이다.
+- Auth 단계 보안 advisor: Leaked Password Protection Disabled WARN 1건. 기존 Auth 설정이며 이번 단계에서는 변경하지 않았다. 안내: https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection
 
 시각 검수: 생성한 화면 콘셉트와 내장 브라우저 스크린샷의 헤더, 제목·문구, 컬럼 구성, 카드·손잡이, 입력·추가 컨트롤을 비교했다. 필수 문구와 기능 구성은 유지했다. 현재 기본 뷰포트에 맞춰 글자 크기와 간격을 줄였으며, 카드 데이터는 실제 검증 과정에서 추가한 네 장이다.
 

@@ -8,6 +8,7 @@
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
     "test": "node --test tests/*.test.mjs",
+    "test:rls": "node scripts/test-rls.mjs",
     "preview": "vite preview --host 127.0.0.1"
   },
   "dependencies": {

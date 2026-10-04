@@ -8,6 +8,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { supabase } from './supabase'
 import { destinationIndex } from './order'
 import type { Board, Card, Column } from './types'
+import Members from './Members'
 
 const collisionDetection: CollisionDetection = args => {
   const hits = pointerWithin(args)
@@ -60,7 +61,9 @@ function ColumnLane({ column, cards, disabled, onAdd }: {
   </section>
 }
 
-export default function App() {
+export default function App({ selectedBoardId, userId, email, onBack, onLogout }: {
+  selectedBoardId: string; userId: string; email: string; onBack: () => void; onLogout: () => void
+}) {
   const [board, setBoard] = useState<Board | null>(null)
   const [columns, setColumns] = useState<Column[]>([])
   const [cards, setCards] = useState<Card[]>([])
@@ -80,7 +83,7 @@ export default function App() {
   const load = useCallback(async () => {
     if (!supabase) throw new Error('환경 설정이 없습니다. .env.local을 확인해 주세요.')
     const currentRequest = ++requestId.current
-    const boardResult = await supabase.from('boards').select('*').eq('name', '우리 팀 보드')
+    const boardResult = await supabase.from('boards').select('*').eq('id', selectedBoardId)
       .order('created_at').order('id').limit(1).single()
     if (boardResult.error) throw new Error('보드를 불러오지 못했습니다. 연결과 접근 정책을 확인해 주세요.')
     const foundBoard = boardResult.data as Board
@@ -98,7 +101,7 @@ export default function App() {
     if (currentRequest === requestId.current) {
       setBoard(foundBoard); setColumns(foundColumns); setCards(foundCards)
     }
-  }, [])
+  }, [selectedBoardId])
 
   const refresh = useCallback(async () => {
     setLoading(true); setError('')
@@ -227,7 +230,9 @@ export default function App() {
       </div>
     </nav>
     <main>
+      <div className="account-row"><span>{email}</span><div><button className="text-button" onClick={onBack}>보드 목록</button><button className="text-button" onClick={onLogout} disabled={busy}>로그아웃</button></div></div>
       <div className="intro"><h1>{board?.name ?? '우리 팀 보드'}</h1><p className="subtitle">함께 정리하고, 하나씩 완성해요.</p></div>
+      {board && <Members boardId={board.id} userId={userId} />}
       <div className="toolbar"><p>카드를 끌어 컬럼과 순서를 바꿔 보세요.</p>
         <button className="refresh" onClick={() => void refresh()} disabled={loading || busy || activeId !== null}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.5 7M20 4v7h-7" /></svg>

@@ -1,0 +1,622 @@
+{
+  "stage": "before",
+  "timestamp": "2026-10-04T21:44:30.115Z",
+  "summary": {
+    "total": 87,
+    "pass": 47,
+    "fail": 40,
+    "blocked": 0
+  },
+  "infrastructureError": null,
+  "results": [
+    {
+      "actor": "alice",
+      "name": "cards.select",
+      "expected": "allow",
+      "status": "PASS",
+      "actual": "rows=1"
+    },
+    {
+      "actor": "alice",
+      "name": "cards.insert",
+      "expected": "allow",
+      "status": "PASS",
+      "actual": "rows=1,unchanged=false"
+    },
+    {
+      "actor": "alice",
+      "name": "cards.update",
+      "expected": "allow",
+      "status": "PASS",
+      "actual": "rows=1,unchanged=false"
+    },
+    {
+      "actor": "alice",
+      "name": "cards.delete",
+      "expected": "allow",
+      "status": "PASS",
+      "actual": "rows=1,unchanged=false"
+    },
+    {
+      "actor": "alice",
+      "name": "columns.select",
+      "expected": "allow",
+      "status": "PASS",
+      "actual": "rows=1"
+    },
+    {
+      "actor": "alice",
+      "name": "columns.insert",
+      "expected": "allow",
+      "status": "PASS",
+      "actual": "rows=1,unchanged=false"
+    },
+    {
+      "actor": "alice",
+      "name": "columns.update",
+      "expected": "allow",
+      "status": "PASS",
+      "actual": "rows=1,unchanged=false"
+    },
+    {
+      "actor": "alice",
+      "name": "columns.delete",
+      "expected": "allow",
+      "status": "PASS",
+      "actual": "rows=1,unchanged=false"
+    },
+    {
+      "actor": "alice",
+      "name": "boards.select",
+      "expected": "allow",
+      "status": "PASS",
+      "actual": "rows=1"
+    },
+    {
+      "actor": "alice",
+      "name": "boards.insert",
+      "expected": "allow+auto-owner",
+      "status": "PASS",
+      "actual": "rows=1"
+    },
+    {
+      "actor": "alice",
+      "name": "boards.update",
+      "expected": "allow",
+      "status": "PASS",
+      "actual": "rows=1,unchanged=false"
+    },
+    {
+      "actor": "alice",
+      "name": "board_members.select",
+      "expected": "allow",
+      "status": "PASS",
+      "actual": "rows=2"
+    },
+    {
+      "actor": "alice",
+      "name": "cards.move_rpc",
+      "expected": "allow",
+      "status": "PASS",
+      "actual": "moved=true"
+    },
+    {
+      "actor": "alice",
+      "name": "cards.cross_board_reassignment",
+      "expected": "deny",
+      "status": "FAIL",
+      "actual": "rows=1"
+    },
+    {
+      "actor": "alice",
+      "name": "columns.cross_board_reassignment",
+      "expected": "deny",
+      "status": "FAIL",
+      "actual": "rows=1"
+    },
+    {
+      "actor": "alice",
+      "name": "boards.change_creator",
+      "expected": "deny",
+      "status": "FAIL",
+      "actual": "rows=1"
+    },
+    {
+      "actor": "alice",
+      "name": "members.invite",
+      "expected": "allow",
+      "status": "PASS",
+      "actual": "inserted=1"
+    },
+    {
+      "actor": "alice",
+      "name": "members.remove",
+      "expected": "allow",
+      "status": "FAIL",
+      "actual": "PGRST202"
+    },
+    {
+      "actor": "alice",
+      "name": "board_members.insert_direct",
+      "expected": "deny",
+      "status": "PASS",
+      "actual": "42501"
+    },
+    {
+      "actor": "alice",
+      "name": "board_members.update_direct",
+      "expected": "deny",
+      "status": "PASS",
+      "actual": "rows=0"
+    },
+    {
+      "actor": "alice",
+      "name": "board_members.delete_direct",
+      "expected": "deny",
+      "status": "PASS",
+      "actual": "rows=0"
+    },
+    {
+      "actor": "alice",
+      "name": "boards.delete",
+      "expected": "allow",
+      "status": "PASS",
+      "actual": "rows=1,unchanged=false"
+    },
+    {
+      "actor": "bob",
+      "name": "cards.select",
+      "expected": "allow",
+      "status": "PASS",
+      "actual": "rows=1"
+    },
+    {
+      "actor": "bob",
+      "name": "cards.insert",
+      "expected": "allow",
+      "status": "PASS",
+      "actual": "rows=1,unchanged=false"
+    },
+    {
+      "actor": "bob",
+      "name": "cards.update",
+      "expected": "allow",
+      "status": "PASS",
+      "actual": "rows=1,unchanged=false"
+    },
+    {
+      "actor": "bob",
+      "name": "cards.delete",
+      "expected": "allow",
+      "status": "PASS",
+      "actual": "rows=1,unchanged=false"
+    },
+    {
+      "actor": "bob",
+      "name": "columns.select",
+      "expected": "allow",
+      "status": "PASS",
+      "actual": "rows=1"
+    },
+    {
+      "actor": "bob",
+      "name": "columns.insert",
+      "expected": "allow",
+      "status": "PASS",
+      "actual": "rows=1,unchanged=false"
+    },
+    {
+      "actor": "bob",
+      "name": "columns.update",
+      "expected": "allow",
+      "status": "PASS",
+      "actual": "rows=1,unchanged=false"
+    },
+    {
+      "actor": "bob",
+      "name": "columns.delete",
+      "expected": "allow",
+      "status": "PASS",
+      "actual": "rows=1,unchanged=false"
+    },
+    {
+      "actor": "bob",
+      "name": "boards.select",
+      "expected": "allow",
+      "status": "PASS",
+      "actual": "rows=1"
+    },
+    {
+      "actor": "bob",
+      "name": "boards.insert",
+      "expected": "allow+auto-owner",
+      "status": "PASS",
+      "actual": "rows=1"
+    },
+    {
+      "actor": "bob",
+      "name": "boards.update",
+      "expected": "allow",
+      "status": "PASS",
+      "actual": "rows=1,unchanged=false"
+    },
+    {
+      "actor": "bob",
+      "name": "board_members.select",
+      "expected": "allow",
+      "status": "PASS",
+      "actual": "rows=2"
+    },
+    {
+      "actor": "bob",
+      "name": "cards.move_rpc",
+      "expected": "allow",
+      "status": "PASS",
+      "actual": "moved=true"
+    },
+    {
+      "actor": "bob",
+      "name": "cards.cross_board_reassignment",
+      "expected": "deny",
+      "status": "FAIL",
+      "actual": "rows=1"
+    },
+    {
+      "actor": "bob",
+      "name": "columns.cross_board_reassignment",
+      "expected": "deny",
+      "status": "FAIL",
+      "actual": "rows=1"
+    },
+    {
+      "actor": "bob",
+      "name": "boards.change_creator",
+      "expected": "deny",
+      "status": "FAIL",
+      "actual": "rows=1"
+    },
+    {
+      "actor": "bob",
+      "name": "members.invite",
+      "expected": "deny",
+      "status": "PASS",
+      "actual": "P0001"
+    },
+    {
+      "actor": "bob",
+      "name": "members.remove",
+      "expected": "deny",
+      "status": "FAIL",
+      "actual": "PGRST202"
+    },
+    {
+      "actor": "bob",
+      "name": "board_members.insert_direct",
+      "expected": "deny",
+      "status": "PASS",
+      "actual": "42501"
+    },
+    {
+      "actor": "bob",
+      "name": "board_members.update_direct",
+      "expected": "deny",
+      "status": "PASS",
+      "actual": "rows=0"
+    },
+    {
+      "actor": "bob",
+      "name": "board_members.delete_direct",
+      "expected": "deny",
+      "status": "PASS",
+      "actual": "rows=0"
+    },
+    {
+      "actor": "bob",
+      "name": "boards.delete",
+      "expected": "allow",
+      "status": "PASS",
+      "actual": "rows=1,unchanged=false"
+    },
+    {
+      "actor": "carol",
+      "name": "cards.select",
+      "expected": "deny",
+      "status": "FAIL",
+      "actual": "rows=1"
+    },
+    {
+      "actor": "carol",
+      "name": "cards.insert",
+      "expected": "deny",
+      "status": "FAIL",
+      "actual": "rows=1,unchanged=false"
+    },
+    {
+      "actor": "carol",
+      "name": "cards.update",
+      "expected": "deny",
+      "status": "FAIL",
+      "actual": "rows=1,unchanged=false"
+    },
+    {
+      "actor": "carol",
+      "name": "cards.delete",
+      "expected": "deny",
+      "status": "FAIL",
+      "actual": "rows=1,unchanged=false"
+    },
+    {
+      "actor": "carol",
+      "name": "columns.select",
+      "expected": "deny",
+      "status": "FAIL",
+      "actual": "rows=1"
+    },
+    {
+      "actor": "carol",
+      "name": "columns.insert",
+      "expected": "deny",
+      "status": "FAIL",
+      "actual": "rows=1,unchanged=false"
+    },
+    {
+      "actor": "carol",
+      "name": "columns.update",
+      "expected": "deny",
+      "status": "FAIL",
+      "actual": "rows=1,unchanged=false"
+    },
+    {
+      "actor": "carol",
+      "name": "columns.delete",
+      "expected": "deny",
+      "status": "FAIL",
+      "actual": "rows=1,unchanged=false"
+    },
+    {
+      "actor": "carol",
+      "name": "boards.select",
+      "expected": "deny",
+      "status": "FAIL",
+      "actual": "rows=1"
+    },
+    {
+      "actor": "carol",
+      "name": "boards.insert",
+      "expected": "allow+auto-owner",
+      "status": "PASS",
+      "actual": "rows=1"
+    },
+    {
+      "actor": "carol",
+      "name": "boards.update",
+      "expected": "deny",
+      "status": "FAIL",
+      "actual": "rows=1,unchanged=false"
+    },
+    {
+      "actor": "carol",
+      "name": "board_members.select",
+      "expected": "deny",
+      "status": "FAIL",
+      "actual": "rows=2"
+    },
+    {
+      "actor": "carol",
+      "name": "cards.move_rpc",
+      "expected": "deny",
+      "status": "FAIL",
+      "actual": "moved=true"
+    },
+    {
+      "actor": "carol",
+      "name": "members.invite",
+      "expected": "deny",
+      "status": "PASS",
+      "actual": "P0001"
+    },
+    {
+      "actor": "carol",
+      "name": "members.remove",
+      "expected": "deny",
+      "status": "FAIL",
+      "actual": "PGRST202"
+    },
+    {
+      "actor": "carol",
+      "name": "board_members.insert_direct",
+      "expected": "deny",
+      "status": "PASS",
+      "actual": "42501"
+    },
+    {
+      "actor": "carol",
+      "name": "board_members.update_direct",
+      "expected": "deny",
+      "status": "PASS",
+      "actual": "rows=0"
+    },
+    {
+      "actor": "carol",
+      "name": "board_members.delete_direct",
+      "expected": "deny",
+      "status": "PASS",
+      "actual": "rows=0"
+    },
+    {
+      "actor": "carol",
+      "name": "boards.delete",
+      "expected": "deny",
+      "status": "FAIL",
+      "actual": "rows=1,unchanged=false"
+    },
+    {
+      "actor": "anon",
+      "name": "cards.select",
+      "expected": "deny",
+      "status": "FAIL",
+      "actual": "rows=1"
+    },
+    {
+      "actor": "anon",
+      "name": "cards.insert",
+      "expected": "deny",
+      "status": "FAIL",
+      "actual": "rows=1,unchanged=false"
+    },
+    {
+      "actor": "anon",
+      "name": "cards.update",
+      "expected": "deny",
+      "status": "FAIL",
+      "actual": "rows=1,unchanged=false"
+    },
+    {
+      "actor": "anon",
+      "name": "cards.delete",
+      "expected": "deny",
+      "status": "FAIL",
+      "actual": "rows=1,unchanged=false"
+    },
+    {
+      "actor": "anon",
+      "name": "columns.select",
+      "expected": "deny",
+      "status": "FAIL",
+      "actual": "rows=1"
+    },
+    {
+      "actor": "anon",
+      "name": "columns.insert",
+      "expected": "deny",
+      "status": "FAIL",
+      "actual": "rows=1,unchanged=false"
+    },
+    {
+      "actor": "anon",
+      "name": "columns.update",
+      "expected": "deny",
+      "status": "FAIL",
+      "actual": "rows=1,unchanged=false"
+    },
+    {
+      "actor": "anon",
+      "name": "columns.delete",
+      "expected": "deny",
+      "status": "FAIL",
+      "actual": "rows=1,unchanged=false"
+    },
+    {
+      "actor": "anon",
+      "name": "boards.select",
+      "expected": "deny",
+      "status": "FAIL",
+      "actual": "rows=1"
+    },
+    {
+      "actor": "anon",
+      "name": "boards.insert",
+      "expected": "deny",
+      "status": "PASS",
+      "actual": "P0001"
+    },
+    {
+      "actor": "anon",
+      "name": "boards.update",
+      "expected": "deny",
+      "status": "FAIL",
+      "actual": "rows=1,unchanged=false"
+    },
+    {
+      "actor": "anon",
+      "name": "board_members.select",
+      "expected": "deny",
+      "status": "PASS",
+      "actual": "rows=0"
+    },
+    {
+      "actor": "anon",
+      "name": "cards.move_rpc",
+      "expected": "deny",
+      "status": "FAIL",
+      "actual": "moved=true"
+    },
+    {
+      "actor": "anon",
+      "name": "members.invite",
+      "expected": "deny",
+      "status": "PASS",
+      "actual": "42501"
+    },
+    {
+      "actor": "anon",
+      "name": "members.remove",
+      "expected": "deny",
+      "status": "FAIL",
+      "actual": "PGRST202"
+    },
+    {
+      "actor": "anon",
+      "name": "board_members.insert_direct",
+      "expected": "deny",
+      "status": "PASS",
+      "actual": "42501"
+    },
+    {
+      "actor": "anon",
+      "name": "board_members.update_direct",
+      "expected": "deny",
+      "status": "PASS",
+      "actual": "rows=0"
+    },
+    {
+      "actor": "anon",
+      "name": "board_members.delete_direct",
+      "expected": "deny",
+      "status": "PASS",
+      "actual": "rows=0"
+    },
+    {
+      "actor": "anon",
+      "name": "boards.delete",
+      "expected": "deny",
+      "status": "FAIL",
+      "actual": "rows=1,unchanged=false"
+    },
+    {
+      "actor": "alice",
+      "name": "members.remove_owner",
+      "expected": "deny",
+      "status": "FAIL",
+      "actual": "PGRST202"
+    },
+    {
+      "actor": "bob",
+      "name": "boards.select_after_removal",
+      "expected": "deny",
+      "status": "FAIL",
+      "actual": "removal-PGRST202"
+    },
+    {
+      "actor": "bob",
+      "name": "columns.select_after_removal",
+      "expected": "deny",
+      "status": "FAIL",
+      "actual": "removal-PGRST202"
+    },
+    {
+      "actor": "bob",
+      "name": "cards.select_after_removal",
+      "expected": "deny",
+      "status": "FAIL",
+      "actual": "removal-PGRST202"
+    },
+    {
+      "actor": "bob",
+      "name": "cards.update_after_removal",
+      "expected": "deny",
+      "status": "FAIL",
+      "actual": "removal-PGRST202"
+    }
+  ]
+}

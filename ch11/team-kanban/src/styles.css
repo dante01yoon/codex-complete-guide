@@ -22,6 +22,36 @@ button:focus-visible, input:focus-visible { outline: 3px solid #b6a7ff; outline-
 .realtime-status.disconnected { color: #b33b4b; }
 .disconnected .connection-dot { background: #b33b4b; }
 .failed { color: #b33b4b; }
+.text-button { border: none; background: transparent; color: #5c48ca; padding: 8px 10px; font-weight: 600; }
+.text-button:hover { background: #f3f0ff; border-radius: 6px; }
+.primary-button { background: var(--accent); color: white; border: 0; border-radius: 6px; padding: 12px 20px; font-weight: 650; }
+.primary-button:hover:not(:disabled) { background: #5a40e5; }
+.auth-page { display: flex; justify-content: center; padding-top: 80px; }
+.auth-panel { max-width: 440px; width: 100%; }
+.auth-panel h1 { font-size: 34px; }
+.auth-description { color: var(--muted); line-height: 1.6; margin-bottom: 28px; }
+.auth-form, .create-board-form { display: flex; flex-direction: column; gap: 12px; }
+.auth-form label, .create-board-form label, .invite-form label { font-weight: 600; font-size: 14px; }
+.auth-form input, .create-board-form input, .invite-form input { border: 1px solid var(--border); border-radius: 6px; padding: 12px 14px; min-width: 0; color: #1e2d4b; width: 100%; background: white; }
+.auth-form input { margin-bottom: 8px; }
+.auth-switch { margin: 20px auto 0; display: block; }
+.notice { color: #248357; font-size: 14px; line-height: 1.6; }
+.account-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; color: var(--muted); font-size: 14px; margin: -14px 0 24px; }
+.account-row span { overflow-wrap: anywhere; }
+.account-row div { display: flex; flex-shrink: 0; }
+.members-panel { margin-top: 28px; padding: 18px 20px; border: 1px solid var(--border); border-radius: 9px; }
+.members-heading { display: flex; justify-content: space-between; align-items: center; }
+.members-heading h2 { font-size: 17px; }
+.member-list { display: flex; gap: 10px; flex-wrap: wrap; padding: 0; list-style: none; margin: 16px 0; }
+.member-list li { display: flex; align-items: center; gap: 10px; background: #f4f5f9; padding: 8px 12px; border-radius: 6px; font-size: 14px; overflow-wrap: anywhere; }
+.member-role { color: #6b50f7; font-size: 12px; }
+.invite-form { max-width: 600px; display: flex; flex-direction: column; gap: 10px; }
+.invite-form div { display: flex; gap: 10px; }
+.invite-form button { flex-shrink: 0; }
+.directory { max-width: 760px; }
+.board-links { display: flex; flex-direction: column; gap: 12px; margin: 24px 0 40px; }
+.board-links button { display: flex; justify-content: space-between; gap: 16px; background: #f0f3f6; border: 1px solid var(--border); border-radius: 8px; padding: 20px; color: #1e2d4b; font-weight: 600; text-align: left; }
+.board-links button span { color: var(--accent); flex-shrink: 0; }
 main { max-width: 1520px; margin: auto; padding: 42px 36px 40px; }
 h1 { font-size: clamp(32px, 3.2vw, 48px); line-height: 1.2; letter-spacing: -1.8px; margin: 0 0 16px; font-weight: 750; }
 .subtitle { font-size: 23px; letter-spacing: -.6px; color: #445676; margin: 0; }
