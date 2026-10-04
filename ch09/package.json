@@ -1,0 +1,12 @@
+{
+  "name": "web-basics",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "recommend": "node recommend.mjs"
+  },
+  "dependencies": {
+    "openai": "^7.27.0",
+    "zod": "^4.6.5"
+  }
+}
