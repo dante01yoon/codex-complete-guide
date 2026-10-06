@@ -7,6 +7,7 @@
     "node": "24.x"
   },
   "scripts": {
+    "demo:checkout": "tsx src/payments/demo-server.ts",
     "mcp": "tsx src/mcp/stdio.ts",
     "approve": "tsx src/mcp/approve.ts",
     "test:rules": "vitest run tests/rules",

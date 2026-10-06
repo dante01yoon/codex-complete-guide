@@ -19,3 +19,7 @@
 - `.env`에 토스페이먼츠 테스트 키를 `TOSS_CLIENT_KEY`, `TOSS_SECRET_KEY`로 넣습니다. 문서에 공개된 테스트 키(test_gck_docs_, test_gsk_docs_)를 쓸 수 있습니다. 실제 키(live_)는 쓰지 마세요.
 - 테스트를 쓸 때만 `touch .codex/TEST_WRITING`으로 스위치를 켜고, 확인 후 `rm .codex/TEST_WRITING`으로 끈 다음 커밋합니다.
 - 루프: `scripts/loop.sh "작업 설명"`
+
+## 결제 시연 서버(15단계)
+
+15단계에서 만든 결제 시연 서버(`src/payments/demo-server.ts`)는 16장에서 추가한 예약 규칙(`src/rules/booking.ts`)을 함께 쓰므로 `ch16/ev-booking` 폴더에 들어 있습니다. `.env`에 토스페이먼츠 문서용 테스트 키를 적은 뒤 `npm run demo:checkout`으로 실행하고 `http://127.0.0.1:5180/`을 여세요. 카드사 인증 화면은 국내 네트워크에서만 열리는 경우가 있습니다.
