@@ -86,30 +86,32 @@ const chargerSchema = z.object({
 }).passthrough();
 const statusSchema = chargerSchema.pick({ statId: true, chgerId: true, stat: true, statUpdDt: true });
 
-export function createBookingService(d: BookingDependencies): BookingService {
-  async function chargers(): Promise<Charger[]> {
-    const [rawStations, rawStatuses] = await Promise.all([
-      d.readJson(resolve(d.dataDirectory, 'stations.json')),
-      d.readJson(resolve(d.dataDirectory, 'status.json')),
-    ]);
-    if (!Array.isArray(rawStations) || !Array.isArray(rawStatuses)) throw new Error('Invalid data');
-    const records = new Map<string, Charger>();
-    for (const raw of rawStations) {
-      const parsed = chargerSchema.safeParse(raw);
-      if (parsed.success) records.set(key(parsed.data), { ...parsed.data });
-    }
-    for (const raw of rawStatuses) {
-      const parsed = statusSchema.safeParse(raw);
-      if (!parsed.success) continue;
-      const update = parsed.data, old = records.get(key(update));
-      if (!old) continue;
-      const updateMs = statusTimestamp(update.statUpdDt), oldMs = statusTimestamp(old.statUpdDt);
-      if (updateMs !== undefined && (oldMs === undefined || updateMs > oldMs)) {
-        old.stat = update.stat; old.statUpdDt = update.statUpdDt;
-      }
-    }
-    return [...records.values()];
+export async function loadBookingChargers(d: Pick<BookingDependencies, 'dataDirectory' | 'readJson'>): Promise<Charger[]> {
+  const [rawStations, rawStatuses] = await Promise.all([
+    d.readJson(resolve(d.dataDirectory, 'stations.json')),
+    d.readJson(resolve(d.dataDirectory, 'status.json')),
+  ]);
+  if (!Array.isArray(rawStations) || !Array.isArray(rawStatuses)) throw new Error('Invalid data');
+  const records = new Map<string, Charger>();
+  for (const raw of rawStations) {
+    const parsed = chargerSchema.safeParse(raw);
+    if (parsed.success) records.set(key(parsed.data), { ...parsed.data });
   }
+  for (const raw of rawStatuses) {
+    const parsed = statusSchema.safeParse(raw);
+    if (!parsed.success) continue;
+    const update = parsed.data, old = records.get(key(update));
+    if (!old) continue;
+    const updateMs = statusTimestamp(update.statUpdDt), oldMs = statusTimestamp(old.statUpdDt);
+    if (updateMs !== undefined && (oldMs === undefined || updateMs > oldMs)) {
+      old.stat = update.stat; old.statUpdDt = update.statUpdDt;
+    }
+  }
+  return [...records.values()];
+}
+
+export function createBookingService(d: BookingDependencies): BookingService {
+  const chargers = () => loadBookingChargers(d);
   function eligible(c: Charger, selected: ConnectorKind): boolean {
     return chargerEligible(c, selected, d.store.blockedChargers.has(`${c.statId}:${c.chgerId}`));
   }
