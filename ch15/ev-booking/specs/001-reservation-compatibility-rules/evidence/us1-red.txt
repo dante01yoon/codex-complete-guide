@@ -1,0 +1,161 @@
+
+ RUN  v5.0.3 /Users/dante/Documents/Codex/2026-10-05/ev-booking
+
+ ❯ tests/rules/overlap.test.ts (31 tests | 31 failed) 5ms
+   ❯ US1 / AC-04-3 — 반열린 구간 비교 (7)
+     × AC-04-3 / S-01 / 뒤쪽 부분 겹침 2ms
+     × AC-04-3 / S-03 / 기존 종료 = 새 시작 0ms
+     × AC-04-3 / S-05 / 새 종료 = 기존 시작 0ms
+     × AC-04-3 / S-06 / 동일 구간 0ms
+     × AC-04-3 / S-06 / 기존 구간 안쪽 0ms
+     × AC-04-3 / S-06 / 기존 구간 전체 포함 0ms
+     × AC-04-3 / S-01 / 앞쪽 부분 겹침 대칭 사례 0ms
+   ❯ US1 / AC-04-3 — confirmed 확보 구간 (11)
+     × AC-04-3 / S-01/S-02 / 부분 겹침 0ms
+     × AC-04-3 / S-03/S-04 / 기존 종료 = 새 시작 0ms
+     × AC-04-3 / S-05 / 새 종료 = 기존 시작 1ms
+     × AC-04-3 / S-06 / 동일 구간 0ms
+     × AC-04-3 / S-06 / 기존 구간 안쪽 0ms
+     × AC-04-3 / S-06 / 기존 구간 전체 포함 0ms
+     × AC-04-3 / S-01/S-02 / 목록 뒤쪽의 같은 충전기 겹침도 찾는다 0ms
+     × AC-01-1·AC-04-3 / S-07 / STATION-A+02는 다른 충전기 0ms
+     × AC-01-1·AC-04-3 / S-07 / STATION-B+01는 다른 충전기 0ms
+     × AC-01-1·AC-04-3 / S-07 / STATION-B+02는 다른 충전기 0ms
+     × AC-04-3 / S-01~S-07 재사용 / 동결된 중첩 입력 불변·반복 결과 동일 0ms
+   ❯ US1 / AC-04-3 — valid-hold 확보 구간 (11)
+     × AC-04-3 / S-01/S-02 / 부분 겹침 0ms
+     × AC-04-3 / S-03/S-04 / 기존 종료 = 새 시작 0ms
+     × AC-04-3 / S-05 / 새 종료 = 기존 시작 0ms
+     × AC-04-3 / S-06 / 동일 구간 0ms
+     × AC-04-3 / S-06 / 기존 구간 안쪽 0ms
+     × AC-04-3 / S-06 / 기존 구간 전체 포함 0ms
+     × AC-04-3 / S-01/S-02 / 목록 뒤쪽의 같은 충전기 겹침도 찾는다 0ms
+     × AC-01-1·AC-04-3 / S-07 / STATION-A+02는 다른 충전기 0ms
+     × AC-01-1·AC-04-3 / S-07 / STATION-B+01는 다른 충전기 0ms
+     × AC-01-1·AC-04-3 / S-07 / STATION-B+02는 다른 충전기 0ms
+     × AC-04-3 / S-01~S-07 재사용 / 동결된 중첩 입력 불변·반복 결과 동일 0ms
+   × AC-04-3 / S-01~S-07 입력 전제 대조 / 빈 유효 목록은 겹침 없음 0ms
+   × AC-04-3 / S-03/S-05 재사용 / 구간 비교도 동결 입력 불변·반복 결과 동일 0ms
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 31 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/rules/overlap.test.ts > US1 / AC-04-3 — 반열린 구간 비교 > AC-04-3 / S-01 / 뒤쪽 부분 겹침
+ FAIL  tests/rules/overlap.test.ts > US1 / AC-04-3 — 반열린 구간 비교 > AC-04-3 / S-03 / 기존 종료 = 새 시작
+ FAIL  tests/rules/overlap.test.ts > US1 / AC-04-3 — 반열린 구간 비교 > AC-04-3 / S-05 / 새 종료 = 기존 시작
+ FAIL  tests/rules/overlap.test.ts > US1 / AC-04-3 — 반열린 구간 비교 > AC-04-3 / S-06 / 동일 구간
+ FAIL  tests/rules/overlap.test.ts > US1 / AC-04-3 — 반열린 구간 비교 > AC-04-3 / S-06 / 기존 구간 안쪽
+ FAIL  tests/rules/overlap.test.ts > US1 / AC-04-3 — 반열린 구간 비교 > AC-04-3 / S-06 / 기존 구간 전체 포함
+ FAIL  tests/rules/overlap.test.ts > US1 / AC-04-3 — 반열린 구간 비교 > AC-04-3 / S-01 / 앞쪽 부분 겹침 대칭 사례
+Error: intervalsOverlap is not implemented (T009)
+ ❯ intervalsOverlap src/rules/overlap.ts:4:9
+      2|
+      3| export function intervalsOverlap(_a: TimeRange, _b: TimeRange): boolea…
+      4|   throw new Error('intervalsOverlap is not implemented (T009)');
+       |         ^
+      5| }
+      6|
+ ❯ tests/rules/overlap.test.ts:59:23
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/31]⎯
+
+ FAIL  tests/rules/overlap.test.ts > US1 / AC-04-3 — confirmed 확보 구간 > AC-04-3 / S-01/S-02 / 부분 겹침
+ FAIL  tests/rules/overlap.test.ts > US1 / AC-04-3 — confirmed 확보 구간 > AC-04-3 / S-03/S-04 / 기존 종료 = 새 시작
+ FAIL  tests/rules/overlap.test.ts > US1 / AC-04-3 — confirmed 확보 구간 > AC-04-3 / S-05 / 새 종료 = 기존 시작
+ FAIL  tests/rules/overlap.test.ts > US1 / AC-04-3 — confirmed 확보 구간 > AC-04-3 / S-06 / 동일 구간
+ FAIL  tests/rules/overlap.test.ts > US1 / AC-04-3 — confirmed 확보 구간 > AC-04-3 / S-06 / 기존 구간 안쪽
+ FAIL  tests/rules/overlap.test.ts > US1 / AC-04-3 — confirmed 확보 구간 > AC-04-3 / S-06 / 기존 구간 전체 포함
+ FAIL  tests/rules/overlap.test.ts > US1 / AC-04-3 — valid-hold 확보 구간 > AC-04-3 / S-01/S-02 / 부분 겹침
+ FAIL  tests/rules/overlap.test.ts > US1 / AC-04-3 — valid-hold 확보 구간 > AC-04-3 / S-03/S-04 / 기존 종료 = 새 시작
+ FAIL  tests/rules/overlap.test.ts > US1 / AC-04-3 — valid-hold 확보 구간 > AC-04-3 / S-05 / 새 종료 = 기존 시작
+ FAIL  tests/rules/overlap.test.ts > US1 / AC-04-3 — valid-hold 확보 구간 > AC-04-3 / S-06 / 동일 구간
+ FAIL  tests/rules/overlap.test.ts > US1 / AC-04-3 — valid-hold 확보 구간 > AC-04-3 / S-06 / 기존 구간 안쪽
+ FAIL  tests/rules/overlap.test.ts > US1 / AC-04-3 — valid-hold 확보 구간 > AC-04-3 / S-06 / 기존 구간 전체 포함
+Error: hasReservationOverlap is not implemented (T009)
+ ❯ hasReservationOverlap src/rules/overlap.ts:12:9
+     10|   _occupancies: readonly Occupancy[],
+     11| ): boolean {
+     12|   throw new Error('hasReservationOverlap is not implemented (T009)');
+       |         ^
+     13| }
+     14|
+ ❯ tests/rules/overlap.test.ts:74:22
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/31]⎯
+
+ FAIL  tests/rules/overlap.test.ts > US1 / AC-04-3 — confirmed 확보 구간 > AC-04-3 / S-01/S-02 / 목록 뒤쪽의 같은 충전기 겹침도 찾는다
+ FAIL  tests/rules/overlap.test.ts > US1 / AC-04-3 — valid-hold 확보 구간 > AC-04-3 / S-01/S-02 / 목록 뒤쪽의 같은 충전기 겹침도 찾는다
+Error: hasReservationOverlap is not implemented (T009)
+ ❯ hasReservationOverlap src/rules/overlap.ts:12:9
+     10|   _occupancies: readonly Occupancy[],
+     11| ): boolean {
+     12|   throw new Error('hasReservationOverlap is not implemented (T009)');
+       |         ^
+     13| }
+     14|
+ ❯ tests/rules/overlap.test.ts:87:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/31]⎯
+
+ FAIL  tests/rules/overlap.test.ts > US1 / AC-04-3 — confirmed 확보 구간 > AC-01-1·AC-04-3 / S-07 / STATION-A+02는 다른 충전기
+ FAIL  tests/rules/overlap.test.ts > US1 / AC-04-3 — confirmed 확보 구간 > AC-01-1·AC-04-3 / S-07 / STATION-B+01는 다른 충전기
+ FAIL  tests/rules/overlap.test.ts > US1 / AC-04-3 — confirmed 확보 구간 > AC-01-1·AC-04-3 / S-07 / STATION-B+02는 다른 충전기
+ FAIL  tests/rules/overlap.test.ts > US1 / AC-04-3 — valid-hold 확보 구간 > AC-01-1·AC-04-3 / S-07 / STATION-A+02는 다른 충전기
+ FAIL  tests/rules/overlap.test.ts > US1 / AC-04-3 — valid-hold 확보 구간 > AC-01-1·AC-04-3 / S-07 / STATION-B+01는 다른 충전기
+ FAIL  tests/rules/overlap.test.ts > US1 / AC-04-3 — valid-hold 확보 구간 > AC-01-1·AC-04-3 / S-07 / STATION-B+02는 다른 충전기
+Error: hasReservationOverlap is not implemented (T009)
+ ❯ hasReservationOverlap src/rules/overlap.ts:12:9
+     10|   _occupancies: readonly Occupancy[],
+     11| ): boolean {
+     12|   throw new Error('hasReservationOverlap is not implemented (T009)');
+       |         ^
+     13| }
+     14|
+ ❯ tests/rules/overlap.test.ts:102:22
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/31]⎯
+
+ FAIL  tests/rules/overlap.test.ts > US1 / AC-04-3 — confirmed 확보 구간 > AC-04-3 / S-01~S-07 재사용 / 동결된 중첩 입력 불변·반복 결과 동일
+ FAIL  tests/rules/overlap.test.ts > US1 / AC-04-3 — valid-hold 확보 구간 > AC-04-3 / S-01~S-07 재사용 / 동결된 중첩 입력 불변·반복 결과 동일
+Error: hasReservationOverlap is not implemented (T009)
+ ❯ hasReservationOverlap src/rules/overlap.ts:12:9
+     10|   _occupancies: readonly Occupancy[],
+     11| ): boolean {
+     12|   throw new Error('hasReservationOverlap is not implemented (T009)');
+       |         ^
+     13| }
+     14|
+ ❯ tests/rules/overlap.test.ts:115:19
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/31]⎯
+
+ FAIL  tests/rules/overlap.test.ts > AC-04-3 / S-01~S-07 입력 전제 대조 / 빈 유효 목록은 겹침 없음
+Error: hasReservationOverlap is not implemented (T009)
+ ❯ hasReservationOverlap src/rules/overlap.ts:12:9
+     10|   _occupancies: readonly Occupancy[],
+     11| ): boolean {
+     12|   throw new Error('hasReservationOverlap is not implemented (T009)');
+       |         ^
+     13| }
+     14|
+ ❯ tests/rules/overlap.test.ts:129:10
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/31]⎯
+
+ FAIL  tests/rules/overlap.test.ts > AC-04-3 / S-03/S-05 재사용 / 구간 비교도 동결 입력 불변·반복 결과 동일
+Error: intervalsOverlap is not implemented (T009)
+ ❯ intervalsOverlap src/rules/overlap.ts:4:9
+      2|
+      3| export function intervalsOverlap(_a: TimeRange, _b: TimeRange): boolea…
+      4|   throw new Error('intervalsOverlap is not implemented (T009)');
+       |         ^
+      5| }
+      6|
+ ❯ tests/rules/overlap.test.ts:138:17
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/31]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  31 failed (31)
+   Start at  23:49:34
+   Duration  141ms (transform 55%, import 21%, tests 18%, worker 5%)
