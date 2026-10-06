@@ -3,11 +3,18 @@ import type { ServerResponse, IncomingMessage } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { parseEnv } from 'node:util';
+import { resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { confirmPayment } from './confirm.js';
 import type { Dependencies, Order, Payment } from './confirm.js';
-import { chargerEligible, slotTimeAllowed, HOLD_DURATION_MS } from '../rules/booking.js';
+import { chargerEligible, holdIsValid } from '../rules/booking.js';
 import { hasReservationOverlap } from '../rules/overlap.js';
 import type { Occupancy } from '../rules/types.js';
+import { createMcpCheckout, checkoutReason, checkoutSummary } from './mcp-checkout.js';
+import type { CheckoutOrder } from './mcp-checkout.js';
+import { localDemoDependencies } from '../mcp/stdio.js';
+import { readCheckoutSnapshot, sharedCheckoutFile } from '../mcp/checkout-storage.js';
+import { loadBookingChargers } from '../mcp/booking-server.js';
 
 const ORIGIN = 'http://127.0.0.1:5180';
 const env = parseEnv(await readFile(new URL('../../.env', import.meta.url), 'utf8'));
@@ -16,19 +23,14 @@ if (!/^test_gck_[^\s:]+$/.test(env.TOSS_CLIENT_KEY ?? '') ||
   throw new Error('위젯용 TOSS_CLIENT_KEY와 TOSS_SECRET_KEY 테스트 키를 .env에 준비하세요.');
 }
 const authorization = `Basic ${Buffer.from(`${env.TOSS_SECRET_KEY}:`).toString('base64')}`;
-const policyAnchor = Date.now();
-const monotonicStart = performance.now();
-const policyNow = () => policyAnchor + Math.floor(performance.now() - monotonicStart);
-const orderId = process.env.BOOKING_DEMO_ORDER_ID ?? `demo-${randomUUID()}`;
-if (!/^demo-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(orderId)) {
-  throw new Error('BOOKING_DEMO_ORDER_ID는 demo-UUID 형식이어야 합니다.');
-}
 const csrf = randomUUID();
-const charger = { statId: 'DEMO', chgerId: '01', limitYn: 'N', delYn: 'N',
-  useTime: '24시간 이용가능', stat: '2', chgerType: '04' };
-const stationName = '서울 충전소 (가상 시연 데이터)';
-let startMs = 0;
-let endMs = 0;
+const projectDirectory = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
+const runtime = localDemoDependencies(projectDirectory);
+const sharedFile = sharedCheckoutFile(projectDirectory);
+const checkout = createMcpCheckout({ projectDirectory, dataDirectory: runtime.dataDirectory,
+  sharedFile, approvalFiles: runtime.approvalFiles, clientKey: env.TOSS_CLIENT_KEY!, csrf });
+const contexts = new Map<string, CheckoutOrder>();
+const sessions = new Map<string, string>();
 const orders = new Map<string, Order>();
 const payments = new Map<string, Payment>();
 const reservations: Occupancy[] = [];
@@ -71,7 +73,8 @@ async function toss(path: string, body?: unknown, idempotencyKey?: string): Prom
   return result as unknown as Payment & { cancels?: { cancelAmount: number; cancelStatus: string }[] };
 }
 const dependencies: Dependencies = {
-  policyNow, realNow: Date.now,
+  // Each confirmation supplies its own shared policy-clock anchor below.
+  policyNow: Date.now, realNow: Date.now,
   toss: {
     async confirm(input, key) {
       providerReason = '';
@@ -97,8 +100,10 @@ const dependencies: Dependencies = {
     async getOrder(id) { return orders.get(id); },
     async saveOrder(order) { orders.set(order.orderId, order); },
     async recordPayment() { /* Verified provider details are cached above. */ },
-    async insertReservation() {
-      reservations.push({ charger, range: { startMs, endMs }, kind: 'confirmed' });
+    async insertReservation(row) {
+      const context = contexts.get(row.orderId);
+      if (!context) throw new Error('ORDER_UNAVAILABLE');
+      reservations.push({ charger: context.hold, range: context.hold, kind: 'confirmed' });
     },
     transaction<T>(work: () => Promise<T>): Promise<T> {
       const result = queue.then(work);
@@ -107,9 +112,27 @@ const dependencies: Dependencies = {
     },
   },
   async canReserve(order) {
-    return chargerEligible(charger, 'DC콤보', false)
-      && ![...orders.values()].some(other => other.orderId !== order.orderId && other.confirmed)
-      && !hasReservationOverlap(charger, { startMs, endMs }, reservations);
+    try {
+    const ready = await checkout.preparePayment(order.orderId);
+    if (!ready.ok || !ready.order) return false;
+    const context = ready.order;
+    const snapshot = await readCheckoutSnapshot(sharedFile);
+    const now = await checkout.policyNow();
+    const chargers = await loadBookingChargers(runtime);
+    const charger = chargers.find(c => c.statId === context.hold.statId && c.chgerId === context.hold.chgerId);
+    if (!charger) return false;
+    const occupied: Occupancy[] = [...reservations,
+      ...snapshot.confirmedReservations.map(r => ({ charger: r, range: r, kind: 'confirmed' as const })),
+      ...snapshot.holds.filter(h => h.id !== context.holdId && holdIsValid(h, now))
+        .map(h => ({ charger: h, range: h, kind: 'valid-hold' as const }))];
+    return chargerEligible(charger, context.hold.connector,
+      snapshot.blockedChargers.includes(`${context.hold.statId}:${context.hold.chgerId}`))
+      && ![...orders.values()].some(other => other.orderId !== order.orderId && other.userId === order.userId && other.confirmed)
+      && !hasReservationOverlap(context.hold, context.hold, occupied);
+    } catch {
+      // A DONE payment must reach compensation if shared/source data cannot be read.
+      return false;
+    }
   },
 };
 
@@ -123,16 +146,11 @@ function page(title: string, content: string, script = ''): string {
   button:disabled{background:#9ba9bb;cursor:wait}.note{color:#526175;font-size:14px}.error{color:#b42318;white-space:pre-wrap;overflow-wrap:anywhere}hr{border:0;border-top:1px solid #e3e8ef;margin:24px 0}
   @media(max-width:700px){main{margin:16px;padding:22px}} </style>
   <main><span class="badge">EV BOOKING · 테스트 모드</span><h1>${escape(title)}</h1>${content}
-  <hr><p class="note">학습용 가상 예약입니다. 실제 충전소 이용·주차면·충전량을 보장하지 않습니다. 실제 금전은 청구되지 않습니다.<br>주문은 서버 메모리에만 저장되며 서버 종료 시 사라집니다.</p></main>${script}</html>`;
+  <hr><p class="note">학습용 가상 예약입니다. 실제 충전소 이용·주차면·충전량을 보장하지 않습니다. 실제 금전은 청구되지 않습니다.<br>MCP 공유 주문을 읽습니다. 결제 결과와 가상 예약 확정은 이 서버의 메모리에만 보관하며 서버 종료 시 사라집니다.</p></main>${script}</html>`;
 }
-const seoul = (ms: number) => new Intl.DateTimeFormat('ko-KR', {
-  timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit',
-  hour: '2-digit', minute: '2-digit', hour12: false,
-}).format(ms);
 function summary(order: Order): string {
-  return `<dl><dt>충전소</dt><dd>${escape(stationName)}</dd><dt>예약 시간 (서울)</dt><dd>${escape(seoul(startMs))} ~ ${escape(seoul(endMs))}</dd>
-  <dt>예약금</dt><dd>3,000원</dd><dt>주문번호</dt><dd>${escape(order.orderId)}</dd>
-  <dt>임시 점유 기한 (서울)</dt><dd>${escape(seoul(order.holdExpiresAt))}</dd></dl>`;
+  const context = contexts.get(order.orderId);
+  return context ? checkoutSummary(context) : '<p>주문 정보를 확인할 수 없습니다.</p>';
 }
 function send(res: ServerResponse, status: number, body: string, json = false) {
   res.writeHead(status, { 'Content-Type': json ? 'application/json; charset=utf-8' : 'text/html; charset=utf-8',
@@ -141,7 +159,8 @@ function send(res: ServerResponse, status: number, body: string, json = false) {
   res.end(body);
 }
 function owner(req: IncomingMessage, order: Order): boolean {
-  return req.headers.cookie?.split(';').some(c => c.trim() === `ev_demo=${order.userId}`) ?? false;
+  const session = sessions.get(order.orderId);
+  return !!session && (req.headers.cookie?.split(';').some(c => c.trim() === `ev_demo_${order.orderId}=${session}`) ?? false);
 }
 async function handle(req: IncomingMessage, res: ServerResponse) {
   if (req.headers.host !== '127.0.0.1:5180') {
@@ -149,44 +168,29 @@ async function handle(req: IncomingMessage, res: ServerResponse) {
   }
   const url = new URL(req.url ?? '/', ORIGIN);
   if (req.method === 'GET' && url.pathname === '/') {
-    res.writeHead(303, { Location: `/checkout/${orderId}`, 'Cache-Control': 'no-store' }); res.end(); return;
+    send(res, 200, page('MCP 예약금 결제', '<p>request_payment가 반환한 /checkout/주문번호 링크를 열어 주세요. 이 화면에서 새 주문이나 점유를 만들지 않습니다.</p>')); return;
   }
-  if (req.method === 'GET' && url.pathname === `/checkout/${orderId}`) {
-    if (!orders.has(orderId)) {
-      const now = policyNow();
-      startMs = Math.ceil((now + 2 * 60 * 60_000) / (30 * 60_000)) * 30 * 60_000;
-      endMs = startMs + 60 * 60_000;
-      if (!slotTimeAllowed(startMs, 60, now)) throw new Error('DEMO_SLOT_INVALID');
-      const userId = randomUUID();
-      orders.set(orderId, { orderId, userId, amount: 3000, holdExpiresAt: now + HOLD_DURATION_MS,
-        confirmed: false, refundAttempts: 0, refundedAmount: 0, operatorReviewRequired: false });
+  if (req.method === 'GET' && url.pathname.startsWith('/checkout/')) {
+    const id = url.pathname.slice('/checkout/'.length);
+    const result = await checkout.renderCheckout(id);
+    if (result.code !== 'READY') { send(res, 200, result.html); return; }
+    const ready = await checkout.preparePayment(id);
+    if (!ready.ok || !ready.order) {
+      send(res, 200, page('결제를 진행할 수 없습니다', '<p>' + escape(checkoutReason(ready.code)) + '</p>')); return;
     }
-    const order = orders.get(orderId)!;
-    // One synthetic demo account, not a login or MCP approval mechanism.
-    res.setHeader('Set-Cookie', `ev_demo=${order.userId}; HttpOnly; SameSite=Lax; Path=/`);
-    if (order.confirmed || policyNow() >= order.holdExpiresAt) {
-      send(res, 200, page(order.confirmed ? '예약 확정' : '임시 점유 만료', summary(order)
-        + '<p>새 시연은 서버를 다시 시작해 주세요.</p>')); return;
+    const context = ready.order;
+    contexts.set(id, context);
+    if (!orders.has(id)) orders.set(id, { orderId: id, userId: context.hold.userId,
+      amount: 3000, holdExpiresAt: context.hold.expiresMs, confirmed: false,
+      refundAttempts: 0, refundedAmount: 0, operatorReviewRequired: false });
+    const order = orders.get(id)!;
+    if (order.confirmed || order.paymentKey) {
+      send(res, 200, page('테스트 결제 결과', summary(order)
+        + '<p>이미 처리한 주문입니다. 결제 결과 화면을 확인해 주세요.</p>')); return;
     }
-    const config = JSON.stringify({ clientKey: env.TOSS_CLIENT_KEY, orderId, csrf,
-      orderName: '가상 충전소 예약금', origin: ORIGIN }).replace(/</g, '\\u003c');
-    send(res, 200, page('예약금 테스트 결제', summary(order)
-      + '<p class="note">카드만 사용해 주세요. 시작 120분 전까지 취소 시 3,000원, 30~120분 전은 1,500원, 30분 미만·시작 후 및 노쇼는 0원 환불입니다. 충전비·주차비는 청구하지 않습니다.</p><div id="payment-method"></div><div id="agreement"></div><p id="message" role="status">결제 위젯을 불러오는 중입니다.</p><button id="pay" disabled>3,000원 테스트 결제</button>',
-      `<script src="https://js.tosspayments.com/v2/standard"></script><script>
-      const config=${config};const button=document.getElementById('pay');const message=document.getElementById('message');
-      function failure(reason){message.className='error';message.textContent=reason;}
-      (async()=>{try{
-        const tossPayments=TossPayments(config.clientKey);const widgets=tossPayments.widgets({customerKey:TossPayments.ANONYMOUS});
-        await widgets.setAmount({currency:'KRW',value:3000});
-        const methods=await widgets.renderPaymentMethods({selector:'#payment-method',variantKey:'DEFAULT'});
-        await widgets.renderAgreement({selector:'#agreement',variantKey:'AGREEMENT'});
-        message.textContent='카드를 선택하고 테스트 결제를 진행해 주세요.';button.disabled=false;
-        button.onclick=async()=>{button.disabled=true;try{
-          const selected=await methods.getSelectedPaymentMethod();if(selected.code!=='CARD'){throw new Error('CARD_ONLY');}
-          await widgets.requestPayment({orderId:config.orderId,orderName:config.orderName,
-            successUrl:config.origin+'/success',failUrl:config.origin+'/fail',windowTarget:'self'});
-        }catch(e){failure(e.code==='USER_CANCEL'?'결제창을 닫았습니다. 예약은 확정되지 않았습니다.':e.message==='CARD_ONLY'?'이 시연은 카드 결제만 지원합니다.':'결제 요청 실패: '+(e.code||'SDK_ERROR'));button.disabled=false;}};
-      }catch(e){failure('결제 위젯을 불러오지 못했습니다: '+(e.code||'SDK_LOAD_FAILED'));}})();</script>`)); return;
+    if (!sessions.has(id)) sessions.set(id, randomUUID());
+    res.setHeader('Set-Cookie', `ev_demo_${id}=${sessions.get(id)}; HttpOnly; SameSite=Lax; Path=/`);
+    send(res, 200, result.html); return;
   }
   const order = orders.get(url.searchParams.get('orderId') ?? '');
   if (req.method === 'GET' && url.pathname === '/success') {
@@ -209,7 +213,7 @@ async function handle(req: IncomingMessage, res: ServerResponse) {
       result.textContent=data.message;for(const [label,value] of [['예약 확정 여부',data.confirmed?'확정':'미확정'],['결제 금액',data.amount===undefined?'승인 확인 없음':data.amount.toLocaleString('ko-KR')+'원'],['결제 수단',data.method||'승인 확인 없음'],['토스 상태',data.paymentStatus||'확인 없음'],['환불 금액',(data.refundedAmount||0).toLocaleString('ko-KR')+'원']]){const dt=document.createElement('dt');dt.textContent=label;const dd=document.createElement('dd');dd.textContent=value;document.getElementById('details').append(dt,dd);}
       }catch{result.className='error';result.textContent='승인 결과를 확인하지 못했습니다. 예약 확정으로 판단하지 마세요.';}})();</script>`)); return;
   }
-  if (req.method === 'POST' && url.pathname === '/api/confirm') {
+  if (req.method === 'POST' && ['/api/confirm', '/api/payment-ready'].includes(url.pathname)) {
     if (req.headers.origin !== ORIGIN || req.headers['x-demo-csrf'] !== csrf ||
         !req.headers['content-type']?.startsWith('application/json')) {
       send(res, 403, JSON.stringify({ message: '시연 세션 요청이 유효하지 않습니다.', confirmed: false }), true); return;
@@ -229,11 +233,24 @@ async function handle(req: IncomingMessage, res: ServerResponse) {
     if (!found || !owner(req, found)) {
       send(res, 403, JSON.stringify({ message: '주문 또는 시연 세션이 유효하지 않습니다.', confirmed: false }), true); return;
     }
+    const ready = await checkout.preparePayment(found.orderId);
+    if (!ready.ok || !ready.order) {
+      send(res, 409, JSON.stringify({ ok: false, message: checkoutReason(ready.code), confirmed: false }), true); return;
+    }
+    if (url.pathname === '/api/payment-ready') {
+      if (found.confirmed || found.paymentKey) {
+        send(res, 409, JSON.stringify({ ok: false, message: '이미 처리한 주문입니다.' }), true); return;
+      }
+      send(res, 200, JSON.stringify({ ok: true }), true); return;
+    }
+    const policyAnchor = await checkout.policyNow();
+    const monotonicStart = performance.now();
     const amount = typeof input.amount === 'string' && /^\d+$/.test(input.amount)
       ? Number(input.amount) : input.amount;
     const result = await confirmPayment({ orderId: found.orderId, userId: found.userId,
       paymentKey: typeof input.paymentKey === 'string' ? input.paymentKey : '',
-      amount: typeof amount === 'number' ? amount : NaN }, dependencies);
+      amount: typeof amount === 'number' ? amount : NaN }, { ...dependencies,
+        policyNow: () => policyAnchor + Math.floor(performance.now() - monotonicStart) });
     const payment = found.paymentKey ? payments.get(found.paymentKey) : undefined;
     const messages = { confirmed: '테스트 결제 승인 완료 · 가상 예약이 확정되었습니다.',
       rejected: '금액 또는 결제 정보가 일치하지 않아 거절했습니다. 예약은 미확정입니다.',
@@ -259,6 +276,6 @@ createServer((req, res) => {
     else res.end();
   });
 }).listen(5180, '127.0.0.1', () => {
-  console.log(`결제 시연: ${ORIGIN}/checkout/${orderId}`);
-  console.log('메모리 주문·가상 충전소·토스 테스트 모드. 종료: Ctrl+C');
+  console.log(`결제 시연: ${ORIGIN}/ (MCP의 request_payment 링크를 열어 주세요)`);
+  console.log('MCP 공유 주문·사람 승인 읽기 전용·토스 테스트 모드. 종료: Ctrl+C');
 });

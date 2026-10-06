@@ -7,6 +7,9 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import type { ZodType } from 'zod';
 import { createBookingService, registerBookingTools } from './booking-server.js';
 import type { BookingDependencies, BookingService, BookingStore } from './booking-server.js';
+import { sharedCheckoutFile, writeCheckoutSnapshot } from './checkout-storage.js';
+import type { CheckoutSnapshot } from './checkout-storage.js';
+import { holdIsValid } from '../rules/booking.js';
 
 /** This process-local demo adapter is not shared storage or a login mechanism. */
 export function createMemoryBookingStore(): BookingStore {
@@ -71,13 +74,57 @@ export function localDemoDependencies(projectDirectory: string): BookingDependen
   };
 }
 
+/** MCP is the sole writer; checkout reads the same runtime snapshot. */
+export function createSharedCheckoutDependencies(base: BookingDependencies, sharedFile: string): BookingDependencies {
+  const sessionId = randomUUID();
+  const orders = new Map<string, CheckoutSnapshot['orders'][number]>();
+  let writes: Promise<unknown> = Promise.resolve();
+  const publish = (): Promise<void> => {
+    const result = writes.then(() => writeCheckoutSnapshot(sharedFile, {
+      version: 1, sessionId, clock: { policyMs: base.now(), realMs: Date.now() },
+      holds: [...base.store.holds.values()].map(h => ({ ...h })),
+      orders: [...orders.values()].map(o => ({ ...o })),
+      confirmedReservations: base.store.confirmedReservations.map(r => ({ ...r })),
+      blockedChargers: [...base.store.blockedChargers],
+    }));
+    writes = result.catch(() => undefined);
+    return result;
+  };
+  const store: BookingStore = {
+    ...base.store,
+    transaction<T>(work: () => T | Promise<T>): Promise<T> {
+      return base.store.transaction(async () => {
+        const result = await work();
+        await publish();
+        return result;
+      });
+    },
+  };
+  return { ...base, store,
+    async createPaymentLink(request) {
+      return base.store.transaction(async () => {
+        const hold = base.store.holds.get(request.holdId);
+        if (!hold || hold.userId !== request.userId || !holdIsValid(hold, base.now()) ||
+            request.amount !== 3000 || request.mode !== 'test') throw new Error('HOLD_UNAVAILABLE');
+        const orderId = randomUUID();
+        orders.set(orderId, { orderId, holdId: request.holdId, userId: request.userId, amount: 3000, mode: 'test' });
+        try { await publish(); }
+        catch { orders.delete(orderId); throw new Error('CHECKOUT_WRITE_FAILED'); }
+        return `http://127.0.0.1:5180/checkout/${orderId}`;
+      });
+    },
+  };
+}
+
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
     const projectDirectory = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
-    const dependencies = localDemoDependencies(projectDirectory);
+    const dependencies = createSharedCheckoutDependencies(localDemoDependencies(projectDirectory), sharedCheckoutFile(projectDirectory));
+    // A new runtime publishes an empty session; previous holds are never restored.
+    await dependencies.store.transaction(() => undefined);
     const server = createMcpBookingServer(createBookingService(dependencies));
     console.error('학습용 가상 예약 MCP: 저장 데이터·메모리 점유, 실제 충전소 이용 보장 없음.');
-    console.error('BOOKING_DEMO_USER_ID는 시연용 계정 주입이며 로그인 인증이 아닙니다. 사람 승인 후 로컬 테스트 링크만 반환하며 결제창과 실제 결제는 제공하지 않습니다.');
+    console.error('BOOKING_DEMO_USER_ID는 시연 계정이며 로그인 인증이 아닙니다. 주문·점유는 로컬 결제 서버와 공유하며 사람 승인 후 테스트 링크를 반환합니다. MCP가 결제를 실행하지 않습니다.');
     await server.connect(new StdioServerTransport());
   } catch {
     console.error('로컬 예약 MCP를 시작하지 못했습니다. 실행 설정과 저장 데이터를 확인하세요.');
