@@ -1,0 +1,30 @@
+{
+  "description": "ev-booking 학습용 하네스. 직접 시험 후에도 아직 신뢰 등록하지 않음.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "^(Bash|apply_patch)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$(git rev-parse --show-toplevel)/.codex/guard.sh\"",
+            "timeout": 10,
+            "statusMessage": "테스트 파일·실제 결제 키 보호 검사"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$(git rev-parse --show-toplevel)/.codex/verify.sh\"",
+            "timeout": 120,
+            "statusMessage": "Vitest·TypeScript 종료 검증"
+          }
+        ]
+      }
+    ]
+  }
+}
