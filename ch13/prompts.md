@@ -1,0 +1,78 @@
+# 13장 요청 프롬프트와 명령
+
+챗GPT 앱의 '충전소 예약' 프로젝트(ev-booking 폴더)에서 GPT-6.1-Sol(medium)로 진행했습니다. 스펙킷 CLI는 1.1.0입니다.
+
+## 스펙킷 CLI 설치
+
+```text
+uv tool install specify-cli --from git+https://github.com/github/spec-kit.git@v1.1.0
+```
+
+## git 저장소 만들기와 스펙킷 초기화(ev-booking 폴더에서)
+
+```text
+git init
+specify init --here --integration codex --integration-options="--skills"
+```
+
+## 헌법 작성 요청
+
+```text
+$speckit-constitution 이 프로젝트의 헌법을 만들어 줘. docs/prd.md와 AGENTS.md의 정책을 따른다. 그리고 다음 조항을 반드시 넣어 줘. 테스트 우선(NON-NEGOTIABLE): 모든 기능은 수용 기준(AC 번호)마다 테스트를 먼저 쓰고, 사용자가 확인하고, 실패하는 것을 확인한 다음에 구현한다. 구현 단계에서는 테스트 파일을 고치지 않는다.
+```
+
+## 기술 구성과 커넥터 정책 요청
+
+```text
+헌법 좋아. 임시 보고서는 지우고 커밋해 줘. 그리고 C-10의 기술 구성은 이렇게 정할게. Node.js 24와 타입스크립트, 테스트는 Vitest, 예약 규칙은 화면과 분리된 순수 함수 모듈(src/rules)로 만들어. 이 답을 docs/tasks.md의 C-10에 기록해 줘. 정책도 하나 더할게. 운전자가 자기 차량의 커넥터 종류를 고르면 그 커넥터를 지원하는 충전기만 예약할 수 있어. 커넥터 종류와 충전기 타입(chgerType) 코드의 대응은 ../ev-map/data의 실제 값과 공공데이터포털 활용 가이드를 확인해서 표로 정리하고, PRD에 이 정책을 반영해 줘. 아직 코드는 만들지 마
+```
+
+## 기능 명세 요청
+
+```text
+$speckit-specify 예약 겹침과 커넥터 호환 규칙. 같은 충전기에서 시간이 겹치는 확정 예약이나 임시 점유가 있으면 새 예약을 거절하고, 차량 커넥터를 지원하지 않는 충전기는 예약을 거절한다. 시나리오는 GIVEN/WHEN/THEN으로 쓰고, 앞 예약이 끝나는 시각과 새 예약이 시작하는 시각이 같은 경우 같은 경계를 꼭 포함해 줘. 근거는 docs/prd.md와 docs/acceptance.md에서 찾아 줘.
+```
+
+## 계획과 작업 목록 요청
+
+```text
+$speckit-plan 기술 구성은 docs/tasks.md의 C-10 답변을 따라 줘. 이 기능은 src/rules의 순수 함수로 만들고, 화면과 저장소는 이번 범위에서 제외해.
+$speckit-tasks 테스트 작업을 구현 작업보다 앞에 두고, 각 테스트 작업에 AC 번호와 시나리오 번호를 적어 줘.
+```
+
+## 구현 요청(사용자 스토리 1까지)
+
+```text
+$speckit-implement US1(T001~T013)까지만 진행해 줘. 테스트를 쓰고 나면 멈추고 나에게 확인을 받아.
+```
+
+## 테스트 승인과 구현 요청
+
+```text
+테스트 확인했어. 기대 결과가 명세와 맞아. 테스트 파일과 설정을 먼저 커밋하고, 미구현 진입점을 만든 뒤 테스트를 실행해서 실패하는 것과 실패 이유를 보여 줘. 그다음 테스트 파일은 고치지 말고 구현해서 통과시켜 줘. 끝나면 테스트를 커밋한 뒤로 tests/ 폴더가 바뀌지 않았는지 git diff로 확인해 줘
+```
+
+## 환불 테스트 작성 요청(새 채팅)
+
+```text
+docs/acceptance.md의 AC-07-1부터 AC-07-5까지를 Vitest 테스트로 만들어 줘. 파일은 tests/rules/refund.test.ts로 하고, 테스트 이름에 AC 번호를 넣고, 경계 시각은 테스트를 하나씩 따로 만들어 줘. 구현은 하지 마. 테스트를 실행해서 실패하는 것과 실패 이유를 보여 주고, 테스트 파일만 커밋해 줘
+```
+
+## /goal로 구현 맡기기(새 채팅)
+
+```text
+/goal tests/rules/refund.test.ts의 테스트가 모두 통과한다. npx vitest run 결과로 확인한다. tests/ 폴더의 파일은 수정하지 않는다. 구현은 src/rules/refund.ts에 한다.
+```
+
+## 일부러 고장 내기 요청
+
+```text
+구현을 커밋해 줘. 그다음 테스트가 제 역할을 하는지 확인하고 싶어. src/rules/refund.ts의 경계 비교를 일부러 하나씩 바꿔 보고(예: 120분 이상을 120분 초과로), 바꿀 때마다 테스트를 실행해서 어떤 테스트가 실패하는지 표로 보여 줘. 확인이 끝나면 코드를 원래대로 돌려놓고 전체 테스트가 통과하는지, 커밋 이후 바뀐 파일이 없는지 확인해 줘
+```
+
+## TDD 스킬로 구현 요청
+
+```text
+$test-driven-development docs/acceptance.md의 AC-08-1과 AC-08-2(일반 예약의 체크인 가능 시각)를 src/rules/checkin.ts에 구현해 줘.
+```
+
