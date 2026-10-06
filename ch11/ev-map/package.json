@@ -1,0 +1,21 @@
+{
+  "name": "seoul-ev-map",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "data": "python3 scripts/prepare_dashboard.py",
+    "dev": "npm run data && vite --host 127.0.0.1",
+    "build": "npm run data && vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "test": "python3 -m unittest discover -s tests && node --test tests/columns.test.mjs"
+  },
+  "dependencies": {
+    "maplibre-gl": "6.12.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "devDependencies": {
+    "vite": "8.3.2"
+  }
+}
