@@ -1,0 +1,15 @@
+node_modules/
+artifacts/
+dist/
+build/
+coverage/
+.vitest/
+*.log
+.env*
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+.vscode/
+.idea/
+node_modules
