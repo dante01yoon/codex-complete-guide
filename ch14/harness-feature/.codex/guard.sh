@@ -1,56 +1,102 @@
-#!/bin/bash
-# 학습용 문자열 가드. 셸을 실행하거나 입력 원문/키 값을 출력하지 않는다.
+#!/usr/bin/env bash
+# PreToolUse / UserPromptSubmit: JSON on stdin; raw command/patch also supported.
+# Exit 0 = allow, 2 = block. Never execute or echo the submitted input.
 set -euo pipefail
-command -v jq >/dev/null || { printf 'jq가 없어 안전 검사를 수행할 수 없습니다.\n' >&2; exit 2; }
-deny() {
-  jq -n --arg reason "$1" '{hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"deny",permissionDecisionReason:$reason}}'
-  exit 0
+export EV_GUARD_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"
+exec node --input-type=commonjs -e '
+const fs = require("node:fs");
+const path = require("node:path");
+const root = process.env.EV_GUARD_ROOT;
+const raw = fs.readFileSync(0, "utf8");
+function block(reason) {
+  console.error(`guard: BLOCKED — ${reason}`);
+  process.exit(2);
 }
-payload=$(cat)
-if ! printf '%s' "$payload" | jq -e 'type == "object"' >/dev/null 2>&1; then
-  deny '훅 입력이 올바른 JSON 객체가 아니어서 실행을 차단했습니다.'
-fi
-tool=$(printf '%s' "$payload" | jq -r '.tool_name // ""')
-case "$tool" in
-  apply_patch|Bash|exec_command|shell|shell_command|functions.apply_patch|functions.exec_command) ;;
-  *) printf '{}\n'; exit 0 ;;
-esac
-# Codex 표준 command, 직접 시험용 cmd/patch 및 문자열 입력을 지원한다.
-if ! input=$(printf '%s' "$payload" | jq -er '.tool_input | if type == "string" then . else (.command // .cmd // .patch) end | select(type == "string")'); then
-  deny '명령 또는 패치를 읽을 수 없어 실행을 차단했습니다.'
-fi
-if printf '%s' "$input" | LC_ALL=C grep -Eq 'live_(sk|gsk|ck|gck)_'; then
-  deny '토스페이먼츠 실제 키가 포함되어 실행을 차단했습니다. test_로 시작하는 테스트 키만 사용하세요.'
-fi
-tests_path='(^|[^[:alnum:]_.-])tests(/|$|[^[:alnum:]_.-])'
-workdir=$(printf '%s' "$payload" | jq -r '(if (.tool_input | type) == "object" then .tool_input.workdir else null end) // .cwd // ""')
-case "$tool" in
-  *apply_patch)
-    # 내용에 tests/가 등장하는 것과 변경 대상 경로를 구분한다. 이동도 검사한다.
-    paths=$(printf '%s\n' "$input" | sed -nE 's/^\*\*\* (Add File|Update File|Delete File|Move to):[[:space:]]*//p')
-    if printf '%s\n' "$paths" | LC_ALL=C grep -Eq "$tests_path" || { [[ -n "$paths" ]] && printf '%s' "$workdir" | LC_ALL=C grep -Eq "$tests_path"; }; then
-      deny 'tests/ 폴더의 파일 추가·수정·삭제·이동은 금지되어 있습니다. 구현 코드를 수정하세요.'
-    fi
-    ;;
-  *)
-    if printf '%s\n%s' "$input" "$workdir" | LC_ALL=C grep -Eq "$tests_path"; then
-      # 허용 목록은 단일 조회 명령에만 적용한다. 파이프·리다이렉션·치환은 허용하지 않는다.
-      simple=true
-      case "$input" in *[';&|><`$']*|*$'\n'*|*\\*) simple=false ;; esac
-      case "$input" in *--output*|*--ext-diff*|*--textconv*|*--pre*|*--exec*|*--open*) simple=false ;; esac
-      readonly=false
-      if "$simple"; then
-        case "$input" in
-          cat\ *|ls\ *|head\ *|tail\ *|wc\ *|rg\ *|grep\ *|git\ diff\ *|git\ status\ *|git\ show\ *) readonly=true ;;
-          npx\ vitest\ run*|npx\ tsc\ --noEmit*)
-            case "$input" in *--update*|*' -u'*|*--outputFile*|*--reporter*|*--config*) ;; *) readonly=true ;; esac ;;
-        esac
-      fi
-      if ! "$readonly"; then
-        deny 'tests/ 폴더를 변경할 수 있는 셸 명령을 차단했습니다. 단순 조회와 테스트 실행만 허용합니다.'
-      fi
-    fi
-    ;;
-esac
-# allow 결정으로 기존 권한 검사를 우회하지 않는다.
-printf '{}\n'
+if (!raw.trim()) block("빈 입력은 검사할 수 없습니다.");
+let event;
+try { event = JSON.parse(raw); }
+catch {
+  if (/^\s*[\[{]/.test(raw)) block("잘못된 JSON 입력입니다.");
+  event = { tool_input: { command: raw } };
+}
+if (typeof event === "string") event = { tool_input: { command: event } };
+if (!event || typeof event !== "object" || Array.isArray(event)) block("지원하지 않는 입력 형식입니다.");
+// Scan decoded JSON too, so Unicode-escaped key prefixes cannot bypass the guard.
+if (raw.includes("live_") || JSON.stringify(event).includes("live_")) {
+  block("실제 결제 키 접두사가 포함됐습니다. 테스트 키만 사용하세요.");
+}
+const cwd = typeof event.cwd === "string" ? event.cwd : root;
+function protectedPath(value) {
+  if (typeof value !== "string") return false;
+  const clean = value.replace(/^["\x27]|["\x27]$/g, "");
+  const absolute = path.resolve(cwd, clean);
+  const tests = path.join(root, "tests");
+  if (absolute === tests || absolute.startsWith(tests + path.sep)) return true;
+  // Resolve existing parents as well as symlinked files/directories.
+  let existing = absolute;
+  while (!fs.existsSync(existing) && path.dirname(existing) !== existing) existing = path.dirname(existing);
+  try {
+    const real = fs.realpathSync(existing);
+    return real === tests || real.startsWith(tests + path.sep);
+  } catch { return false; }
+}
+const name = String(event.tool_name || "");
+const input = event.tool_input ?? event;
+function strings(value) {
+  if (typeof value === "string") return [value];
+  if (!value || typeof value !== "object") return [];
+  return Object.values(value).flatMap(strings);
+}
+function patch(text) {
+  // Check only file headers, not source lines mentioning tests/.
+  for (const line of text.split(/\r?\n/)) {
+    const match = line.match(/^\*\*\* (?:Add File|Update File|Delete File|Move to):\s*(.+)$/)
+      || line.match(/^(?:---|\+\+\+)\s+(?:[ab]\/)?([^\t]+)(?:\t.*)?$/)
+      || line.match(/^diff --git [ab]\/(\S+) [ab]\/(\S+)$/);
+    if (match && match.slice(1).some(protectedPath)) block("tests/ 파일의 추가·수정·삭제·이동 패치는 금지됩니다.");
+  }
+}
+function command(text, workdir = cwd) {
+  patch(text);
+  const simple = text.trim();
+  const testRunner = /\b(?:test:rules|vitest)\b/.test(simple);
+  if (testRunner && /(?:^|\s)(?:-u|--update)(?:[=\s]|$)/.test(simple)) {
+    block("tests/ 스냅샷 갱신은 금지됩니다.");
+  }
+  // Conservative token scan; resolve aliases and paths relative to command workdir.
+  const tokens = text.match(/[^\s;|&<>()"\x27`]+/g) || [];
+  const touches = /(^|[\s/"\x27=])tests(?:[/\s"\x27;|&]|$)/m.test(text)
+    || tokens.some(token => protectedPath(path.resolve(workdir, token)));
+  if (!touches) return;
+  // Only uncomplicated read/run commands qualify. Reject redirections, chaining,
+  // substitutions, and options that can run a preprocessor or write an output file.
+  if (/[;|&<>`\n\r]/.test(text) || /\$[({]/.test(text)) block("tests/ 를 참조하는 복합 셸 명령은 허용하지 않습니다.");
+  const read = /^(?:cat|head|tail|ls|wc)\s/.test(simple)
+    || (/^rg\s/.test(simple) && !/--(?:pre|hostname-bin)(?:[=\s]|$)/.test(simple))
+    || (/^git\s+(?:diff|status|show|ls-files)\b/.test(simple) && !/--(?:output|ext-diff|textconv|no-index)(?:[=\s]|$)/.test(simple))
+    || /^npm\s+run\s+(?:test:rules|typecheck)(?:\s|$)/.test(simple)
+    || /^(?:npx\s+)?vitest\s+run\b/.test(simple);
+  if (!read) block("tests/ 를 변경할 가능성이 있는 명령은 금지됩니다. 테스트 대신 구현을 수정하세요.");
+}
+if (/patch/i.test(name)) {
+  strings(input).forEach(patch);
+} else if (/^(?:Read|read_file)$|__read(?:_file)?$/i.test(name)) {
+  // Read tools may inspect tests; the key scan above still applies.
+} else {
+  function inspect(value) {
+    if (typeof value === "string") { command(value); return; }
+    if (!value || typeof value !== "object") return;
+    for (const [key, val] of Object.entries(value)) {
+      if (/^(?:file_path|path|destination|target|source)$/i.test(key) && protectedPath(val)) {
+        block("tests/ 파일의 쓰기·이동은 허용하지 않습니다.");
+      }
+      if (/^(?:cmd|command)$/i.test(key) && typeof val === "string") {
+        command(val, value.workdir || cwd);
+      } else if (/^(?:patch|input)$/i.test(key) && typeof val === "string" && val.includes("*** Begin Patch")) {
+        patch(val);
+      } else if (val && typeof val === "object") inspect(val);
+    }
+  }
+  inspect(input);
+}
+'

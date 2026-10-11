@@ -1,104 +1,46 @@
 <!doctype html>
 <html lang="ko">
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>하네스 확인 화면</title>
-<style>
-  :root { color-scheme: light; font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; color:#172b36; background:#f3f6f7; }
-  * { box-sizing:border-box; } body { margin:0; } main { max-width:1080px; margin:auto; padding:48px 24px; }
-  .eyebrow { color:#387a71; font-size:12px; font-weight:750; letter-spacing:2px; }
-  h1 { font-size:36px; letter-spacing:-1.5px; margin:12px 0; } h2 { font-size:20px; margin:0; } p { line-height:1.65; color:#536772; }
-  header { margin-bottom:28px; } .toolbar { display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap; }
-  button { background:#173e38; color:white; border:0; padding:12px 18px; border-radius:10px; cursor:pointer; font:inherit; font-weight:650; } button:disabled { opacity:.6; }
-  .grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
-  section { background:white; padding:26px; border:1px solid #dce5e8; border-radius:16px; box-shadow:0 3px 12px #1232; min-width:0; } .wide { grid-column:1/-1; }
-  .section-title { display:flex; align-items:center; justify-content:space-between; gap:12px; } .number { color:#82949c; margin-right:9px; }
-  .badge { font-size:12px; font-weight:750; border-radius:6px; padding:6px 9px; background:#edf1f3; color:#536772; }
-  .PASS { background:#e1f3ec; color:#16634a; } .FAIL { background:#fff0e8; color:#a13c18; } .BLOCKED { background:#fff4cf; color:#785900; }
-  .small { font-size:13px; } code { font-size:12px; overflow-wrap:anywhere; } .path { word-break:break-all; }
-  table { width:100%; border-collapse:collapse; margin-top:20px; font-variant-numeric:tabular-nums; } th { text-align:left; color:#657983; font-size:12px; font-weight:600; } td,th { padding:14px 8px; border-bottom:1px solid #edf1f3; } td:first-child { font-weight:650; } tr:last-child td { border:0; }
-  .amount { display:flex; align-items:center; gap:16px; } .track { width:100px; height:7px; background:#eef2f3; border-radius:4px; overflow:hidden; } .bar { height:100%; background:#399b7a; }
-  .counts { display:flex; gap:38px; margin:24px 0; } .count { font-size:38px; font-weight:750; line-height:1.1; font-variant-numeric:tabular-nums; } .count-label { display:block; margin-top:8px; color:#657983; font-size:13px; } #passed { color:#16634a; } #failed { color:#a13c18; }
-  .verdict { font-size:24px; font-weight:700; margin:24px 0 12px; } ul { padding-left:20px; } li { margin:9px 0; font-size:13px; overflow-wrap:anywhere; } footer { margin-top:22px; color:#657983; font-size:12px; line-height:1.7; }
-  #error { color:#a13c18; } [hidden] { display:none; }
-  @media(max-width:700px) { main { padding:28px 16px; } h1 { font-size:29px; } .grid { grid-template-columns:1fr; } section { padding:20px; } .track { width:45px; } td,th { padding:12px 4px; } .amount { gap:8px; } }
-</style>
-<main>
-  <header>
-    <div class="eyebrow">HARNESS / LOCAL DEMO</div>
-    <div class="toolbar"><h1>하네스가 지키는 것</h1><button id="refresh">현재 상태 새로고침</button></div>
-    <p>환불 경계값, 기존 테스트 결과, 테스트 파일 보존을 한눈에 확인합니다.</p>
-    <div class="small path" id="project">확인 중…</div>
-    <p id="error" role="alert" hidden></p>
-  </header>
-  <div class="grid" aria-live="polite">
-    <section class="wide">
-      <div class="section-title"><h2><span class="number">01</span>취소 시점별 환불 금액</h2><span id="refund-status" class="badge">확인 중</span></div>
-      <p class="small">예약 시작 <strong>2026-10-06 14:00:00</strong> · 서울 시간(Asia/Seoul) · 예약금 3,000원</p>
-      <code id="source">src/rules/refund.ts → reduceUserCancellation</code>
-      <table><thead><tr><th scope="col">취소 시각</th><th scope="col">시작까지</th><th scope="col">함수 계산 결과</th></tr></thead><tbody id="rows"></tbody></table>
-      <p class="small" id="refund-note">현재 소스의 순수 함수 계산값입니다. 각 행은 별개의 확정 예약이며 실제 환불을 요청하지 않습니다.</p>
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>하네스 확인 화면</title><link rel="stylesheet" href="/style.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <header><a class="brand" href="/" aria-label="하네스 확인 화면 홈"><span class="brand-mark">H</span>Harness <span class="muted">/</span> <span id="project">ev-booking</span></a><span class="local">로컬 확인 화면 · :4174</span></header>
+  <main>
+    <div class="intro"><div><h1>하네스가 지키는 것</h1><p>정책의 경계, 실행한 검사의 결과, 테스트 파일의 변경을 직접 확인합니다.</p></div><div class="actions"><button id="refresh" class="secondary">조회 새로고침</button><button id="verify">검사 실행</button></div></div>
+    <p id="notice" role="status" aria-live="polite">프로젝트 상태를 읽는 중입니다.</p>
+    <div class="summary" aria-label="현재 확인 상태">
+      <div><span>환불 규칙</span><strong id="refund-summary">조회 중</strong><small>기존 순수 함수 호출</small></div>
+      <div><span>검사 결과</span><strong id="check-summary">NOT_RUN</strong><small id="check-time">아직 실행하지 않음</small></div>
+      <div><span>테스트 파일</span><strong id="test-summary">조회 중</strong><small>Git HEAD와 작업 트리 비교</small></div>
+    </div>
+    <section aria-labelledby="refund-heading">
+      <div class="section-title"><div><span class="number">01</span><h2 id="refund-heading">시점별 환불 금액</h2></div><span class="tag">US-07 · AC-07-1~3</span></div>
+      <p class="description">예약금 3,000원 · 원래 시작 <strong>2026-10-06 14:00:00</strong> · 서울 시간 (Asia/Seoul)</p>
+      <div class="policy-band"><div><strong>3,000원</strong><span>시작 120분 전까지 · 경계 포함</span></div><div><strong>1,500원</strong><span>120분 미만 ~ 30분 전까지 · 경계 포함</span></div><div><strong>0원</strong><span>30분 미만 · 시작 후</span></div></div>
+      <div class="refund-layout"><div class="table-scroll"><table><thead><tr><th scope="col">취소 시각</th><th scope="col">시작까지</th><th scope="col">환불 요청액</th></tr></thead><tbody id="refund-rows"></tbody></table></div><aside class="inspector"><label for="moment">확인할 취소 시각</label><select id="moment"></select><span class="muted">함수가 반환한 환불 요청액</span><strong id="selected-amount">—</strong><p id="selected-detail"></p><small id="refund-source"></small></aside></div>
+      <p class="footnote">규칙의 계산 결과입니다. 실제 환불·대기 승계는 실행하지 않으며, 노쇼·종료 전 사용자 취소를 전제로 합니다. 외부 결제: <b>NOT_RUN</b></p>
     </section>
-    <section>
-      <div class="section-title"><h2><span class="number">02</span>기존 테스트</h2><span id="test-status" class="badge">확인 중</span></div>
-      <div class="counts"><div><span class="count" id="passed">—</span><span class="count-label">통과</span></div><div><span class="count" id="failed">—</span><span class="count-label">실패</span></div></div>
-      <p class="small" id="test-meta"></p><code>npm run test:rules</code>
-      <p class="small" id="test-note"></p><p class="small" id="test-time"></p>
-      <p class="small">서버 시작 시 한 번 실행한 결과입니다. 다시 검증하려면 서버를 재시작하세요.</p>
+    <section aria-labelledby="checks-heading">
+      <div class="section-title"><div><span class="number">02</span><h2 id="checks-heading">실제로 실행한 테스트와 검사</h2></div><span class="tag">종료 코드 · 실행 시각 · 출력</span></div>
+      <p class="description">검사 실행 버튼으로 이 프로젝트의 규칙 테스트와 타입 검사를 실행합니다. 화면을 열거나 조회를 새로고침하면 실행하지 않습니다.</p>
+      <div id="checks"></div>
+      <p class="footnote">PASS는 해당 명령의 성공만 뜻합니다. 전체 서비스·모바일 예약 흐름·토스 테스트 실연결을 검증한 결과가 아닙니다. 서버 재시작 시 결과는 NOT_RUN으로 초기화됩니다.</p>
     </section>
-    <section>
-      <div class="section-title"><h2><span class="number">03</span>테스트 파일 보존</h2><span id="git-status" class="badge">확인 중</span></div>
-      <div class="verdict" id="verdict">확인 중…</div><p class="small" id="git-note"></p>
-      <code id="head"></code><ul id="files"></ul><p class="small" id="git-time"></p>
-      <p class="small">마지막 커밋(HEAD)과 비교합니다. 수정·삭제·추가 파일과 미추적 파일을 포함합니다.</p>
+    <section aria-labelledby="integrity-heading">
+      <div class="section-title"><div><span class="number">03</span><h2 id="integrity-heading">tests 폴더가 바뀌었는지</h2></div><button id="integrity-refresh" class="secondary compact">변경 조회</button></div>
+      <div class="integrity"><span id="integrity-state" class="badge">조회 중</span><p id="integrity-description"></p></div>
+      <div class="baseline"><span>비교 기준</span><code id="baseline">—</code><span id="tracked"></span></div>
+      <ul id="changed-files" class="file-list"></ul>
+      <p class="footnote">Git의 staged·unstaged·미추적 파일을 읽기만 합니다. Git이 무시한 파일은 제외됩니다. HEAD 이후 변경 여부이며, 커밋하면 비교 기준이 바뀝니다. 테스트 변경 차단을 직접 시도한 결과나 승인 이력 검증은 아닙니다.</p>
     </section>
-  </div>
-  <footer>로컬 학습용 확인 화면 · 환불 계산과 Git 비교는 새로고침 때 다시 확인합니다.<br>이 화면은 관찰 결과이며 훅의 자동 차단·신뢰 등록이나 실제 결제·충전소 이용을 증명하지 않습니다.</footer>
-</main>
-<script type="module">
-  const $ = (id) => document.getElementById(id);
-  const badge = (id, status) => { $(id).textContent = status; $(id).className = `badge ${status}`; };
-  const when = (value) => value ? new Date(value).toLocaleString('ko-KR', { timeZone:'Asia/Seoul', hour12:false }) + ' (서울)' : '';
-  async function refresh() {
-    $('refresh').disabled = true;
-    try {
-      const response = await fetch('/api/status', { cache:'no-store' });
-      if (!response.ok) throw new Error();
-      const { project, refund, tests, changes } = await response.json();
-      $('error').hidden = true;
-      $('project').textContent = project;
-      badge('refund-status', refund.status); badge('test-status', tests.status); badge('git-status', changes.status);
-      $('rows').replaceChildren();
-      for (const row of refund.rows) {
-        const tr = document.createElement('tr');
-        const seconds = row.remainingSeconds;
-        const values = [row.time, `${Math.floor(seconds / 60)}분 ${seconds % 60}초`];
-        for (const value of values) { const td = document.createElement('td'); td.textContent = value; tr.append(td); }
-        const td = document.createElement('td'); const amount = document.createElement('div'); amount.className = 'amount';
-        const track = document.createElement('div'); track.className = 'track'; track.setAttribute('aria-hidden','true');
-        const bar = document.createElement('div'); bar.className = 'bar'; bar.style.width = `${Math.max(0,Math.min(100,row.amount / 3000 * 100))}%`; track.append(bar);
-        const label = document.createElement('strong'); label.textContent = `${row.amount.toLocaleString('ko-KR')}원`;
-        amount.append(track,label); td.append(amount); tr.append(td); $('rows').append(tr);
-      }
-      $('refund-note').textContent = refund.message ?? '현재 소스의 순수 함수 계산값입니다. 각 행은 별개의 확정 예약이며 실제 환불을 요청하지 않습니다.';
-      $('passed').textContent = tests.passed ?? '—'; $('failed').textContent = tests.failed ?? '—';
-      $('test-meta').textContent = tests.total == null ? '개수 확인 불가' : `전체 ${tests.total}개 · 건너뜀 ${tests.skipped}개 · 실패 스위트 ${tests.failedSuites}개`;
-      $('test-note').textContent = tests.message;
-      $('test-time').textContent = `실행 시작: ${when(tests.startedAt)} / 완료: ${when(tests.finishedAt)}`;
-      $('verdict').textContent = changes.changed === null ? '비교할 수 없음' : changes.changed ? '변경 감지' : '변경 없음';
-      $('git-note').textContent = changes.message ?? (changes.changed ? `${changes.files.length}개 파일이 HEAD와 다릅니다.` : 'tests 폴더가 HEAD와 일치합니다.');
-      $('head').textContent = changes.head ? `HEAD ${changes.head}` : '';
-      $('files').replaceChildren();
-      const kinds = { M:'수정', A:'추가', D:'삭제', T:'유형 변경', '?':'미추적 추가' };
-      for (const file of changes.files) { const li = document.createElement('li'); li.textContent = `${kinds[file.kind] ?? file.kind} · ${file.path}`; $('files').append(li); }
-      $('git-time').textContent = changes.checkedAt ? `비교 시각: ${when(changes.checkedAt)}` : '';
-    } catch {
-      $('error').hidden = false;
-      $('error').textContent = '서버 연결 실패. 아래 결과는 최신 상태로 확인되지 않았습니다.';
-      for (const id of ['refund-status','test-status','git-status']) badge(id,'BLOCKED');
-    } finally { $('refresh').disabled = false; }
-  }
-  $('refresh').addEventListener('click',refresh);
-  refresh();
-</script>
+    <section class="guardrails" aria-labelledby="guardrails-heading">
+      <div class="section-title"><div><span class="number">04</span><h2 id="guardrails-heading">지침과 보호 장치</h2></div><span class="tag">docs/harness.md 기준</span></div>
+      <div class="guardrail-grid"><div><h3>정책을 한 곳에서</h3><p>PRD·수용 기준·작업 목록을 먼저 읽고, 예약 규칙은 src/rules의 순수 함수로 둡니다.</p><code>AGENTS.md · docs/*.md</code></div><div><h3>테스트를 보호</h3><p>guard 훅은 테스트 파일 변경과 실제 결제 키를 차단합니다. 완료 훅은 테스트와 타입 검사를 실행합니다.</p><code>.codex/guard.sh · verify.sh</code></div><div><h3>차단되면 멈춤</h3><p>훅 차단 즉시 중단합니다. 같은 테스트가 세 번 연속 실패하면 중단하며, 횟수는 에이전트가 관리합니다.</p><code>자동 실패 집계는 구현되지 않음</code></div></div>
+      <p class="footnote">이 화면은 보호 훅을 수정하거나 차단 동작을 실행하지 않습니다. 현재 세션에서는 조회 명령의 실제 차단을 관찰했으며, 모든 훅 이벤트의 활성화를 검증한 것은 아닙니다. 다른 프로젝트에서는 아래 설명과 설정을 함께 바꿔 주세요.</p>
+    </section>
+    <footer><span>학습용 로컬 시연 · 실제 충전소 이용, 주차면, 충전량을 보장하지 않습니다.</span><span>복사해서 쓰기: demo/README.md</span></footer>
+  </main>
+</body>
 </html>

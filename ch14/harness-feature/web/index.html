@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>내 예약 · ev-booking</title>
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="/style.css">
+    <script type="module" src="/reservations.js"></script>
+  </head>
+  <body>
+    <header class="topbar"><a class="brand" href="/" aria-label="ev booking 내 예약"><span class="brand-icon">ϟ</span> ev<span>booking</span></a><span class="local-tag">LOCAL DEMO</span></header>
+    <main>
+      <div class="page-header"><div><p class="eyebrow">DRIVER / RESERVATIONS</p><h1>내 예약</h1><p class="intro">방문 일정부터 취소 환불까지, 한눈에 확인하세요.</p></div><span class="driver"><span class="avatar">D</span> 시연 운전자</span></div>
+      <section class="clock-strip" aria-label="시연용 시계"><div><span class="clock-dot"></span><strong>시연용 시계</strong><span class="frozen">고정</span></div><p id="clock">서버 시각을 불러오는 중</p><span class="timezone">서울 · Asia/Seoul</span></section>
+      <div class="layout">
+        <section class="reservation-section" aria-labelledby="list-title">
+          <div class="section-heading"><h2 id="list-title">예약 목록 <span id="count">—</span></h2><span>예약금·환불은 모두 모의 처리</span></div>
+          <p id="notice" role="status" aria-live="polite">예약을 불러오는 중입니다.</p>
+          <button id="retry" class="secondary" hidden>다시 불러오기</button>
+          <div id="reservations"></div>
+        </section>
+        <aside>
+          <section class="policy"><p class="eyebrow">CANCELLATION GUIDE</p><h2>취소 전, 확인하세요</h2><p class="policy-intro">원래 예약 시작까지 남은 시간에 따라<br>예약금 반환 금액이 달라져요.</p><dl><div><dt>120분 이상</dt><dd>3,000원 <span>전액 반환</span></dd></div><div><dt>30분 이상 · 120분 미만</dt><dd>1,500원 <span>50% 반환</span></dd></div><div><dt>30분 미만 · 시작 후</dt><dd>0원 <span>반환 없음</span></dd></div></dl><p class="policy-note">정확히 120분 전은 전액,<br>정확히 30분 전은 1,500원 반환입니다.</p></section>
+          <section class="demo-note"><span class="note-icon">i</span><div><h2>학습용 가상 예약</h2><p>실제 충전소 이용·주차면·충전량을 보장하지 않습니다. 결제와 환불은 모의 처리로, 실제 금전 이동이 없습니다.</p><p>시연 예약 3건에만 1건 제한·정각/30분 시작 규칙의 예외를 적용했습니다. 새로고침해도 취소 결과는 유지되며, 서버를 재시작하면 초기화됩니다.</p></div></section>
+        </aside>
+      </div>
+      <footer>ev-booking <span>서울 전기차 충전소 가상 예약 · 로컬 시연</span></footer>
+    </main>
+    <dialog id="cancel-dialog" aria-labelledby="dialog-title" aria-describedby="dialog-summary">
+      <form method="dialog"><span class="dialog-icon">↗</span><p class="eyebrow">CANCEL RESERVATION</p><h2 id="dialog-title">예약을 취소할까요?</h2><p id="dialog-summary"></p><div class="dialog-refund"><span>모의 반환 예정액</span><strong id="dialog-amount"></strong><p id="dialog-unreturned"></p></div><p class="dialog-note">확정하면 예약이 사용자 취소 상태로 바뀝니다.<br>실제 환불이나 대기 승계는 실행하지 않습니다.</p><p id="dialog-error" role="alert"></p><div class="dialog-actions"><button id="keep" value="keep" class="secondary" autofocus>예약 유지</button><button id="confirm" type="button" class="primary">모의 취소 확정</button></div></form>
+    </dialog>
+  </body>
+</html>
