@@ -1,0 +1,25 @@
+{
+  "name": "ev-booking",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "24.x"
+  },
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "check:ui": "node scripts/check-ui.mjs",
+    "lint:arch": "node scripts/lint-arch.mjs",
+    "test:rules": "vitest run tests/rules",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@babel/parser": "8.0.7",
+    "@babel/traverse": "8.0.7",
+    "@types/node": "24.19.1",
+    "parse5": "8.0.1",
+    "playwright": "1.64.0",
+    "typescript": "7.0.2",
+    "vitest": "5.0.3"
+  }
+}
