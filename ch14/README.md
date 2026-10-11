@@ -15,6 +15,7 @@
 | `prompts.md` | 14장에서 보낸 요청 |
 | `harness-on/` | '하네스 효과를 화면으로 확인하기'의 하네스 있음 프로젝트(실습 14를 마친 상태) |
 | `harness-off/` | 같은 프로젝트에서 `.codex`, `AGENTS.md`, `.specify`를 지운 하네스 없음 프로젝트 |
+| `harness-feature/` | '하네스로 기능 만들기'(08~10단계)를 마친 프로젝트. 화면 확인 도구(`npm run check:ui`), 맞춤 린트(`npm run lint:arch`), 내 예약 화면과 보낸 요청. 폴더의 README 참고 |
 | `setup-harness-demo.sh` | 두 폴더를 `~/harness-demo`로 복사하고 패키지 설치, `git init`, 첫 커밋까지 해 주는 준비 스크립트 |
 
 `harness-on`과 `harness-off`는 이 저장소 안에서 그대로 열지 말고 `bash ch14/setup-harness-demo.sh`로 꺼내서 쓰세요. 훅이 git 저장소의 맨 위 폴더를 기준으로 스크립트를 찾기 때문입니다.
@@ -27,4 +28,4 @@
 
 ## 다른 프로젝트에 하네스 붙이기
 
-이 장의 훅과 AGENTS.md 규칙을 어떤 프로젝트에나 설치할 수 있게 정리한 키트는 [codex-harness-kit](https://github.com/dante01yoon/codex-harness-kit)에 있습니다. 설치 명령을 한 번 실행하면 프로젝트의 테스트 도구(Node, Python, Go)에 맞춰 보호할 경로와 검증 명령을 정하고, `harness.py doctor`로 설치 상태를 점검할 수 있습니다. 설치한 뒤에도 훅은 신뢰해야 동작합니다.
+이 장의 훅과 AGENTS.md 규칙을 어떤 프로젝트에나 설치할 수 있게 정리한 키트는 [codex-harness-kit](https://github.com/dante01yoon/codex-harness-kit)에 있습니다. 설치 명령을 한 번 실행하면 프로젝트의 테스트 도구(Node, Python, Go)에 맞춰 보호할 경로와 검증 명령을 정하고, `harness.py doctor`로 설치 상태를 점검할 수 있습니다. 설치한 뒤에도 훅은 신뢰해야 동작합니다. 0.2.1부터는 화면 확인(`harness.py see`)과 맞춤 린트(`harness.py lint`)도 들어 있습니다. `--lint --see-url --see-start --see-verify` 옵션으로 켭니다(14.9).
