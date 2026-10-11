@@ -1,0 +1,13 @@
+import type { ChargerIdentity, Occupancy, TimeRange } from './types.js';
+
+export function intervalsOverlap(_a: TimeRange, _b: TimeRange): boolean {
+  throw new Error('intervalsOverlap is not implemented (T009)');
+}
+
+export function hasReservationOverlap(
+  _charger: ChargerIdentity,
+  _range: TimeRange,
+  _occupancies: readonly Occupancy[],
+): boolean {
+  throw new Error('hasReservationOverlap is not implemented (T009)');
+}
