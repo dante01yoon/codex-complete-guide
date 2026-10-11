@@ -1,0 +1,30 @@
+{
+  "description": "ev-booking 학습용 하네스. PreToolUse(guard.sh)로 tests/ 수정과 실제 결제 키를 막고, Stop(verify.sh)으로 끝내기 전에 테스트와 타입 검사를 실행한다. 프로젝트 훅은 신뢰해야 동작한다.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "^(Bash|apply_patch)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$(git rev-parse --show-toplevel)/.codex/guard.sh\"",
+            "timeout": 10,
+            "statusMessage": "테스트 파일·실제 결제 키 보호 검사"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$(git rev-parse --show-toplevel)/.codex/verify.sh\"",
+            "timeout": 120,
+            "statusMessage": "Vitest·TypeScript 종료 검증"
+          }
+        ]
+      }
+    ]
+  }
+}

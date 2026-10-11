@@ -1,0 +1,12 @@
+
+> ev-booking@0.0.0 test:rules
+> vitest run tests/rules
+
+
+ RUN  v5.0.3 /Users/dante/Documents/Codex/2026-10-05/ev-booking
+
+
+ Test Files  1 passed (1)
+      Tests  31 passed (31)
+   Start at  23:49:50
+   Duration  82ms (transform 58%, import 24%, tests 11%, worker 6%)
