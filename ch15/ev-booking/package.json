@@ -7,6 +7,7 @@
     "node": "24.x"
   },
   "scripts": {
+    "demo:payment": "node src/demo/server.ts",
     "test:rules": "vitest run tests/rules",
     "typecheck": "tsc --noEmit"
   },

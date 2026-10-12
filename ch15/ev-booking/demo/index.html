@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>15장 · 루프 실행 기록</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar" aria-label="루프 목록">
+      <a class="brand" href="/">루프 실행 기록</a>
+      <nav id="loop-list" aria-label="실행한 루프"><p class="loading">기록을 읽는 중…</p></nav>
+      <p class="source-note">기록 출처 <code>artifacts/loops</code><br>실행 시각은 서울 기준</p>
+    </aside>
+    <div class="workspace">
+      <header class="toolbar">
+        <span>루프 실행 기록</span>
+        <button id="refresh" class="refresh" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7v5h-5M20 12a8 8 0 1 0-2.4 5.7"/></svg>기록 새로고침</button>
+      </header>
+      <main id="main">
+        <section class="intro" aria-labelledby="heading">
+          <h1 id="heading">15장의 루프, 한눈에.</h1>
+          <p>시작 전 검사부터 마지막 바퀴까지, 실제 실행 기록을 따라갑니다.</p>
+          <div id="totals" class="totals" aria-label="전체 실행 요약"></div>
+        </section>
+        <p id="notice" role="status" aria-live="polite" hidden></p>
+        <section id="detail" aria-label="선택한 루프 상세" aria-live="polite"></section>
+      </main>
+    </div>
+  </div>
+</body>
+</html>
