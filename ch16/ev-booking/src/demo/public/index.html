@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>예약금 결제 · EV Booking</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/style.css">
+  <script src="https://js.tosspayments.com/v2/standard" defer></script>
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <header><a href="/" class="brand"><span class="mark">↯</span> EV Booking</a><span class="test-badge">TEST MODE</span></header>
+  <main>
+    <div class="intro"><div class="eyebrow">충전 계획, 한 걸음 더 편하게</div><h1 id="heading">예약금 결제</h1><p id="lead">예약 정보를 확인하고 테스트 결제를 진행해 주세요.</p></div>
+    <div class="layout">
+      <section class="summary card" aria-labelledby="order-heading">
+        <div class="section-top"><span class="eyebrow">YOUR RESERVATION</span><span class="tag">가상 예약</span></div>
+        <h2 id="order-heading">충전소를 불러오는 중…</h2><p id="address" class="address"></p>
+        <div id="charger" class="charger"></div>
+        <dl><div><dt>예약 날짜</dt><dd id="date">—</dd></div><div><dt>예약 시간</dt><dd id="time">—</dd></div><div><dt>이용 시간</dt><dd id="duration">—</dd></div><div><dt>시연 운전자</dt><dd>테스트 운전자 1</dd></div></dl>
+        <div class="total"><span>예약금</span><strong>3,000<span>원</span></strong></div>
+        <p class="small">서울 시간 기준 · 충전비와 주차비는 포함되지 않습니다.</p>
+        <div class="policy"><h3>예약금 환불 안내</h3><div><span>시작 2시간 전까지 취소</span><b>3,000원</b></div><div><span>시작 30분 전까지 취소</span><b>1,500원</b></div><div><span>30분 미만 · 시작 후 · 노쇼</span><b>0원</b></div><p>정상 이용 종료 시 예약금 전액 반환</p></div>
+      </section>
+      <section class="payment card" aria-labelledby="payment-heading">
+        <h2 id="payment-heading">결제 수단</h2><p class="small">이 시연은 신용·체크카드만 지원합니다.</p>
+        <div id="payment-method"></div><div id="agreement"></div>
+        <div id="result" hidden></div>
+        <p id="status" role="status" aria-live="polite">토스 결제 위젯을 불러오는 중…</p>
+        <button id="pay" disabled>3,000원 테스트 결제</button>
+        <a id="back" class="back" href="/" hidden>주문 페이지로 돌아가기</a>
+        <p id="deadline" class="small center"></p>
+        <div class="test-note"><strong>실제 금액이 청구되지 않는 테스트 결제입니다.</strong><p>저장된 충전소 정보를 사용하는 학습용 시연으로, 실제 충전소 이용·주차면·충전량을 보장하지 않습니다.</p></div>
+      </section>
+    </div>
+    <footer>EV BOOKING <span>LOCAL PAYMENT DEMO</span></footer>
+  </main>
+</body>
+</html>

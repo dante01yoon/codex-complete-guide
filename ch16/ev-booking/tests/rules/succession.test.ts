@@ -1,317 +1,244 @@
-import { existsSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import * as rules from '../../src/rules/index.js';
 
-// US-11·US-16 / T-26·T-32~T-36·T-41의 순수 규칙 계약 제안.
-// src/rules/succession.ts의 reduceSuccession(state, event)를 대상으로 한다.
-// 저장·화면·권한·실제 결제/환불 호출은 검증하지 않는다.
-// 모든 후보는 사전 자격 검사 통과·진행 예약 없음, 신청 시각은 서로 다르다.
-// C-04: 정확히 10분의 승계 요청 만료는 미정이다. 직전/직후만 검증한다.
-// C-01·C-02·C-03·C-06·C-07·C-09의 미정 정책은 기대값으로 추가하지 않는다.
-// 특히 승인 시 잔여 30분 미만, 미래 승계, 동률, 경합·시계 복구는 제외한다.
-// 검출할 회귀: 노쇼 경계 포함 오류, 체크인 보호 누락, FIFO 오류,
-// 결제 요청을 확정으로 처리, 기한 연장, 종료 연장, 중복 노쇼/요청,
-// 승계 기한을 원래 시작으로 계산, 운영자 취소 후 승계 또는 대기 유지.
-
-interface Reservation {
-  id: string;
-  userId: string;
-  charger: { statId: string; chgerId: string };
-  originalStartMs: number;
-  endMs: number;
-  confirmedAtMs: number;
-  predecessorId: string | null;
-  status: 'confirmed' | 'checked-in' | 'cancelled';
-  cancellationReason: null | 'user' | 'operator' | 'no-show';
-  refundAmount: number;
+// T-32·T-34·T-36의 확정된 부분만 검증한다. 모든 후보는 자격을 충족하고
+// 진행 중 예약이 없으며, 신청 시각은 서로 다르다(C-03·C-06 미정 범위 제외).
+// C-01 노쇼 승계 요청·승인 시 잔여 재검사, C-04 정확히 10분 만료는 사용자 답변 반영.
+// 사용자 취소 승계에 최소 잔여시간을 적용하는 정책은 아직 미정이다.
+// 순수 상태와 효과 요청 계약이며 실제 결제·저장·화면·시계 복구는 검증하지 않는다.
+interface Candidate {
+  readonly userId: string;
+  readonly appliedAtMs: number;
 }
-
-interface Waiter {
-  id: string;
-  userId: string;
-  charger: Reservation['charger'];
-  originalStartMs: number;
-  endMs: number;
-  appliedAtMs: number;
+interface Offer {
+  readonly userId: string;
+  readonly requestedAtMs: number;
+  readonly expiresAtMs: number;
+  readonly amount: number;
 }
-
-interface PaymentRequest {
-  waiterId: string;
-  requestedAtMs: number;
-  expiresAtMs: number;
-  amount: number;
-  active: boolean;
-}
-
-interface State {
-  reservations: Reservation[];
-  waiters: Waiter[];
-  paymentRequests: PaymentRequest[];
-  noShowReservationIds: string[];
-  cancelledWaiterIds: string[];
-}
-
-type Event =
-  | { type: 'tick'; atMs: number }
-  | { type: 'user-cancel' | 'operator-cancel' | 'check-in'; reservationId: string; atMs: number }
-  // 주문·카드 DONE·금액·자리 확보 검사를 통과한 승인 결과만 입력한다.
-  | { type: 'payment-approved'; waiterId: string; reservationId: string; atMs: number; amount: 3000 };
-
-type Effect =
-  | { type: 'request-payment'; waiterId: string; amount: number; expiresAtMs: number }
-  | { type: 'refund'; reservationId: string; amount: number };
-type Result = { state: State; effects: Effect[] };
-type ReduceSuccession = (state: State, event: Event) => Result;
-
-function seoul(time: string): number {
-  return Date.parse(`2026-10-06T${time}+09:00`);
-}
-
-async function reduce(state: State, event: Event): Promise<Result> {
-  // 기존 결제 테스트와 같은 로더: 수집 오류 대신 각 AC에서 구현 부재를 표시한다.
-  // 대상 함수의 대역·구현 스텁·조건부 skip은 사용하지 않는다.
-  const url = new URL('../../src/rules/succession.ts', import.meta.url);
-  expect(existsSync(url), 'src/rules/succession.ts가 아직 구현되지 않았습니다').toBe(true);
-  const module = await import(url.href) as Record<string, unknown>;
-  expect(module.reduceSuccession, 'reduceSuccession 함수가 아직 공개되지 않았습니다').toBeTypeOf('function');
-  return (module.reduceSuccession as ReduceSuccession)(state, event);
-}
-
-function fixture(end = '15:30:00'): State {
-  const charger = { statId: 'demo-station', chgerId: '01' };
-  const originalStartMs = seoul('14:00:00');
-  const endMs = seoul(end);
-  return {
-    reservations: [{ id: 'original', userId: 'driver-A', charger,
-      originalStartMs, endMs, confirmedAtMs: seoul('12:00:00'), predecessorId: null,
-      status: 'confirmed', cancellationReason: null, refundAmount: 0 }],
-    // 배열 순서와 신청 순서를 다르게 해 실제 신청 시각 FIFO를 검증한다.
-    waiters: [
-      { id: 'wait-C', userId: 'driver-C', charger, originalStartMs, endMs, appliedAtMs: seoul('10:00:01') },
-      { id: 'wait-B', userId: 'driver-B', charger, originalStartMs, endMs, appliedAtMs: seoul('10:00:00') },
-    ],
-    paymentRequests: [], noShowReservationIds: [], cancelledWaiterIds: [],
+interface SuccessionState {
+  readonly reservationId: string;
+  readonly originalStartMs: number;
+  readonly originalEndMs: number;
+  readonly cancellationReason: 'user' | 'no-show';
+  readonly candidates: readonly Candidate[];
+  readonly offer: Offer | null;
+  readonly expiredOffers: readonly Offer[];
+  readonly refundRequestedPaymentIds: readonly string[];
+  readonly confirmed: null | {
+    readonly userId: string;
+    readonly confirmedAtMs: number;
+    readonly originalStartMs: number;
+    readonly originalEndMs: number;
+    readonly checkInDeadlineMs: number;
   };
 }
-
-function reservation(state: State, id = 'original'): Reservation {
-  const row = state.reservations.find((item) => item.id === id);
-  expect(row, `예약 ${id}가 보존되어야 합니다`).toBeDefined();
-  return row!;
+type SuccessionEvent =
+  | { readonly type: 'vacancy'; readonly atMs: number }
+  | { readonly type: 'tick'; readonly atMs: number }
+  | { readonly type: 'verified-payment'; readonly atMs: number;
+      readonly userId: string; readonly paymentId: string;
+      readonly amount: number; readonly currency: 'KRW'; readonly method: '카드'; readonly status: 'DONE' };
+interface SuccessionResult {
+  readonly state: SuccessionState;
+  readonly effects: readonly ({
+    readonly type: 'request-payment'; readonly userId: string;
+    readonly amount: number; readonly expiresAtMs: number;
+  } | { readonly type: 'refund'; readonly paymentId: string; readonly amount: number })[];
+}
+type SuccessionReducer = (state: SuccessionState, event: SuccessionEvent) => SuccessionResult;
+const at = (time: string): number => Date.parse(`2026-10-06T${time}+09:00`);
+function vacant(overrides: Partial<SuccessionState> = {}): SuccessionState {
+  return {
+    reservationId: 'reservation-A', originalStartMs: at('14:00:00'),
+    originalEndMs: at('15:30:00'), cancellationReason: 'no-show',
+    // 배열 위치를 순서로 착각하는 구현도 잡도록 신청 역순으로 제공한다.
+    candidates: [{ userId: 'C', appliedAtMs: at('10:00:01') },
+      { userId: 'B', appliedAtMs: at('10:00:00') }],
+    offer: null, confirmed: null, expiredOffers: [], refundRequestedPaymentIds: [], ...overrides,
+  };
+}
+function reduce(state: SuccessionState, event: SuccessionEvent): SuccessionResult {
+  const exported = rules as unknown as Record<string, unknown>;
+  expect(exported.reduceSuccession, 'src/rules/index.ts의 reduceSuccession가 미구현·미공개입니다').toBeTypeOf('function');
+  return (exported.reduceSuccession as SuccessionReducer)(state, event);
+}
+function requested(): SuccessionState {
+  return vacant({ cancellationReason: 'user', offer: {
+    userId: 'B', requestedAtMs: at('14:05:00'), expiresAtMs: at('14:15:00'), amount: 3000,
+  } });
 }
 
-function activeRequests(state: State): PaymentRequest[] {
-  return state.paymentRequests.filter((item) => item.active);
-}
-
-function expectRequest(result: Result, waiterId: string, requestedAt: string, expiresAt: string): void {
-  expect(activeRequests(result.state)).toEqual([{
-    waiterId, requestedAtMs: seoul(requestedAt), expiresAtMs: seoul(expiresAt), amount: 3000, active: true,
-  }]);
-  expect(result.effects.filter((effect) => effect.type === 'request-payment')).toEqual([
-    { type: 'request-payment', waiterId, amount: 3000, expiresAtMs: seoul(expiresAt) },
-  ]);
-}
-
-async function noShowRequest(end = '15:30:00'): Promise<Result> {
-  return reduce(fixture(end), { type: 'tick', atMs: seoul('14:15:00') });
-}
-
-async function confirmedSuccessor(end = '15:30:00', confirmedAt = '14:20:00'): Promise<Result> {
-  const offered = await noShowRequest(end);
-  return reduce(offered.state, { type: 'payment-approved', waiterId: 'wait-B',
-    reservationId: 'successor-B', atMs: seoul(confirmedAt), amount: 3000 });
-}
-
-describe('US-16 — 일반 예약 노쇼 자동 취소', () => {
-  it.each(['14:14:59', '14:14:59.999'])('AC-16-1 / %s에는 노쇼·승계 요청이 없다', async (time) => {
-    // GIVEN 미체크인 확정 예약 / WHEN 기한 직전 / THEN 예약과 대기 유지.
-    const state = fixture();
-    const result = await reduce(state, { type: 'tick', atMs: seoul(time) });
-    expect(result.state).toEqual(state);
-    expect(result.effects).toEqual([]);
+describe('US-11·US-16 — 첫 대기자에게 결제 기회 제공', () => {
+  it('AC-11-1·AC-10-3 / 사용자 취소 — 신청 시각이 이른 B에게만 요청, 확정은 보류', () => {
+    const result = reduce(vacant({ cancellationReason: 'user' }), { type: 'vacancy', atMs: at('14:05:00') });
+    expect(result.state.offer).toEqual({
+      userId: 'B', requestedAtMs: at('14:05:00'), expiresAtMs: at('14:15:00'), amount: 3000,
+    });
+    expect(result.state.confirmed).toBeNull();
+    expect(result.effects).toEqual([{ type: 'request-payment', userId: 'B', amount: 3000, expiresAtMs: at('14:15:00') }]);
   });
-
-  it('AC-16-1 / 정확히 시작 +15분에 노쇼 취소·환불 0원으로 진행 예약에서 제외한다', async () => {
-    const result = await noShowRequest();
-    expect(reservation(result.state)).toMatchObject({ status: 'cancelled', cancellationReason: 'no-show', refundAmount: 0 });
-    expect(result.state.reservations.filter((row) => row.userId === 'driver-A' && row.status !== 'cancelled')).toEqual([]);
-    expect(result.state.noShowReservationIds).toEqual(['original']);
-    expect(result.effects.filter((effect) => effect.type === 'refund')).toEqual([]);
-  });
-
-  it('AC-16-2 / 14:14:59에 체크인한 예약은 14:15:01에도 보호한다', async () => {
-    const state = fixture();
-    state.reservations[0]!.status = 'checked-in';
-    const result = await reduce(state, { type: 'tick', atMs: seoul('14:15:01') });
-    expect(result.state).toEqual(state);
-    expect(result.effects).toEqual([]);
-  });
-
-  it('AC-16-3 / 노쇼 뒤 신청 시각이 가장 빠른 B에게만 3,000원 결제를 요청한다', async () => {
-    const result = await noShowRequest();
-    expectRequest(result, 'wait-B', '14:15:00', '14:25:00');
-    expect(result.state.reservations).toHaveLength(1); // 결제 요청은 승계 확정이 아니다.
-  });
-
-  it('AC-16-3 / 같은 기한을 반복 처리해도 노쇼와 결제 요청은 각각 한 건이다', async () => {
-    const first = await noShowRequest();
-    const repeated = await reduce(first.state, { type: 'tick', atMs: seoul('14:15:00') });
+  it('AC-16-3 / 노쇼 이벤트 반복 — 활성 결제 요청 1건만 유지', () => {
+    const event = { type: 'vacancy' as const, atMs: at('14:15:00') };
+    const first = reduce(vacant(), event);
+    const repeated = reduce(first.state, event);
+    expect(first.state.offer?.userId).toBe('B');
+    expect(first.effects).toEqual([{ type: 'request-payment', userId: 'B', amount: 3000, expiresAtMs: at('14:25:00') }]);
     expect(repeated.state).toEqual(first.state);
-    expect(repeated.state.noShowReservationIds).toEqual(['original']);
-    expect(activeRequests(repeated.state)).toHaveLength(1);
     expect(repeated.effects).toEqual([]);
+    expect(repeated.state.confirmed).toBeNull();
   });
-});
-
-describe('US-07 — 승계와 무관한 사용자 취소', () => {
-  it('AC-07-3·AC-03-3 / 대기자가 없는 30분 예약은 시작 후 5분에도 취소·환불 0원·진행 제한 해제가 가능하다', async () => {
-    const state = fixture('14:30:00');
-    state.waiters = [];
-    const before = structuredClone(state);
-
-    const result = await reduce(state, {
-      type: 'user-cancel', reservationId: 'original', atMs: seoul('14:05:00'),
-    });
-
-    expect(reservation(result.state)).toMatchObject({
-      status: 'cancelled', cancellationReason: 'user', refundAmount: 0,
-    });
-    expect(result.state.reservations.filter((row) => row.userId === 'driver-A'
-      && row.status !== 'cancelled')).toEqual([]);
-    expect(result.state.noShowReservationIds).toEqual([]);
-    expect(activeRequests(result.state)).toEqual([]);
-    expect(result.effects).toEqual([]);
-    expect(state).toEqual(before);
-  });
-});
-
-describe('US-11 — 결제 기회와 승계 확정', () => {
-  it('AC-11-1 / 사용자 취소 뒤에도 첫 대기자에게만 요청하며 아직 확정하지 않는다', async () => {
-    const result = await reduce(fixture(), { type: 'user-cancel', reservationId: 'original', atMs: seoul('14:05:00') });
-    expect(reservation(result.state)).toMatchObject({ status: 'cancelled', cancellationReason: 'user', refundAmount: 0 });
-    expectRequest(result, 'wait-B', '14:05:00', '14:15:00');
-    expect(result.state.reservations).toHaveLength(1);
-    expect(result.state.noShowReservationIds).toEqual([]);
-  });
-
-  it('AC-11-2 / 요청 후 9분 59초에 승인되면 별도 승계 예약을 확정한다', async () => {
-    const offered = await reduce(fixture(), { type: 'user-cancel', reservationId: 'original', atMs: seoul('14:05:00') });
-    const result = await reduce(offered.state, { type: 'payment-approved', waiterId: 'wait-B',
-      reservationId: 'successor-B', atMs: seoul('14:14:59'), amount: 3000 });
-    expect(result.state.reservations).toHaveLength(2);
-    expect(reservation(result.state, 'successor-B')).toMatchObject({ userId: 'driver-B', status: 'confirmed',
-      predecessorId: 'original', confirmedAtMs: seoul('14:14:59'),
-      originalStartMs: seoul('14:00:00'), endMs: seoul('15:30:00') });
-    expect(activeRequests(result.state)).toEqual([]);
-    expect(result.effects.filter((effect) => effect.type === 'request-payment')).toEqual([]);
-  });
-
-  it('AC-11-3 확정 부분 / 10분 직전에는 B의 기회를 유지하고 기한을 연장하지 않는다', async () => {
-    const offered = await noShowRequest();
-    const result = await reduce(offered.state, { type: 'tick', atMs: seoul('14:24:59.999') });
-    expect(result.state).toEqual(offered.state);
-    expect(result.effects).toEqual([]);
-  });
-
-  it('AC-11-3 확정 부분 / 10분 경과 후 미결제 B를 만료하고 C에게 새 10분 기회를 준다', async () => {
-    const offered = await noShowRequest();
-    const result = await reduce(offered.state, { type: 'tick', atMs: seoul('14:25:01') });
-    expect(result.state.paymentRequests.find((row) => row.waiterId === 'wait-B')).toMatchObject({ active: false, expiresAtMs: seoul('14:25:00') });
-    expectRequest(result, 'wait-C', '14:25:01', '14:35:01');
-    expect(result.state.reservations).toHaveLength(1);
-    const repeated = await reduce(result.state, { type: 'tick', atMs: seoul('14:25:01') });
-    expect(repeated.state).toEqual(result.state);
-    expect(repeated.effects).toEqual([]);
-  });
-
-  it('AC-11-4 / 노쇼 후 잔여 15분이면 대기자가 있어도 승계 요청하지 않는다', async () => {
-    const result = await noShowRequest('14:30:00');
-    expect(reservation(result.state)).toMatchObject({ status: 'cancelled', cancellationReason: 'no-show', refundAmount: 0 });
-    expect(activeRequests(result.state)).toEqual([]);
-    expect(result.effects).toEqual([]);
-  });
-
-  it('AC-11-4 / 노쇼 후 잔여 45분이면 첫 대기자에게 요청한다', async () => {
-    expectRequest(await noShowRequest('15:00:00'), 'wait-B', '14:15:00', '14:25:00');
-  });
-
-  it('AC-11-5 / 14:20 승계·체크인 뒤에도 종료는 15:00이며 15:20으로 연장하지 않는다', async () => {
-    const confirmed = await confirmedSuccessor('15:00:00');
-    const result = await reduce(confirmed.state, { type: 'check-in', reservationId: 'successor-B', atMs: seoul('14:20:00') });
-    expect(reservation(result.state, 'successor-B')).toMatchObject({ status: 'checked-in',
-      originalStartMs: seoul('14:00:00'), endMs: seoul('15:00:00') });
-  });
-});
-
-describe('승계 확정 시각부터 15분 체크인·재노쇼', () => {
-  it('AC-08-4·AC-11-6 / 원래 노쇼 기한을 지났어도 승계 기한 직전에는 자동 취소하지 않는다', async () => {
-    const confirmed = await confirmedSuccessor();
-    const result = await reduce(confirmed.state, { type: 'tick', atMs: seoul('14:34:59.999') });
-    expect(result.state).toEqual(confirmed.state);
-    expect(result.effects).toEqual([]);
-  });
-
-  it.each(['14:34:59', '14:34:59.999'])('AC-08-4 / 14:20 확정 승계자는 %s에 체크인할 수 있다', async (time) => {
-    const confirmed = await confirmedSuccessor();
-    const result = await reduce(confirmed.state, { type: 'check-in', reservationId: 'successor-B', atMs: seoul(time) });
-    expect(reservation(result.state, 'successor-B')).toMatchObject({ status: 'checked-in', cancellationReason: null });
-    expect(result.state.noShowReservationIds).toEqual(['original']);
-  });
-
-  it('AC-08-4 / 정확히 확정 +15분의 체크인 시도는 거절되고 노쇼로 취소한다', async () => {
-    const confirmed = await confirmedSuccessor();
-    const result = await reduce(confirmed.state, { type: 'check-in', reservationId: 'successor-B', atMs: seoul('14:35:00') });
-    expect(reservation(result.state, 'successor-B')).toMatchObject({ status: 'cancelled', cancellationReason: 'no-show', refundAmount: 0 });
-    expect(result.state.noShowReservationIds).toEqual(['original', 'successor-B']);
-  });
-
-  it('AC-11-6 / 정확히 14:35에 승계자를 재노쇼 처리하고 잔여 55분을 C에게 요청한다', async () => {
-    const confirmed = await confirmedSuccessor();
-    const result = await reduce(confirmed.state, { type: 'tick', atMs: seoul('14:35:00') });
-    expect(reservation(result.state, 'successor-B')).toMatchObject({ status: 'cancelled', cancellationReason: 'no-show', refundAmount: 0, endMs: seoul('15:30:00') });
-    expect(result.state.noShowReservationIds).toEqual(['original', 'successor-B']);
-    expectRequest(result, 'wait-C', '14:35:00', '14:45:00');
-    expect(result.effects.filter((effect) => effect.type === 'refund')).toEqual([]);
-  });
-
   it.each([
-    ['14:15:00', '14:30:00', true],
-    ['14:15:00.001', '14:30:00.001', false],
-    ['14:15:01', '14:30:01', false],
-  ] as const)('AC-11-4·AC-11-6 / 종료 15:00·승계 확정 %s·기한 %s의 다음 승계 허용=%s', async (confirmedAt, deadline, allowed) => {
-    // 유효한 원래 60분 예약의 승계자 노쇼로 정확히 30분/직후를 만든다.
-    const confirmed = await confirmedSuccessor('15:00:00', confirmedAt);
-    const result = await reduce(confirmed.state, { type: 'tick', atMs: seoul(deadline) });
-    expect(reservation(result.state, 'successor-B')).toMatchObject({ status: 'cancelled', cancellationReason: 'no-show', refundAmount: 0 });
-    expect(activeRequests(result.state).map((row) => row.waiterId)).toEqual(allowed ? ['wait-C'] : []);
-    expect(result.effects.filter((effect) => effect.type === 'request-payment')).toHaveLength(allowed ? 1 : 0);
+    { now: '14:15:00', end: '14:30:00', allowed: false, label: '잔여 15분' },
+    { now: '14:15:00', end: '15:00:00', allowed: true, label: '잔여 45분' },
+    { now: '14:29:59.999', end: '15:00:00', allowed: true, label: '잔여 30분 +1ms' },
+    { now: '14:30:00.000', end: '15:00:00', allowed: true, label: '정확히 잔여 30분' },
+    { now: '14:30:00.001', end: '15:00:00', allowed: false, label: '잔여 30분 -1ms' },
+    { now: '14:30:01', end: '15:00:00', allowed: false, label: '잔여 29분 59초' },
+  ])('AC-11-4·AC-16-3 / $label — 요청 허용=$allowed', ({ now, end, allowed }) => {
+    // GIVEN: 원래 예약은 이미 노쇼 취소. 요청 시점의 최소 잔여 조건만 검증한다.
+    const result = reduce(vacant({ originalEndMs: at(end) }), { type: 'vacancy', atMs: at(now) });
+    expect(result.state.confirmed).toBeNull();
+    expect(result.state.originalEndMs).toBe(at(end));
+    if (allowed) {
+      expect(result.state.offer?.userId).toBe('B');
+      expect(result.effects).toHaveLength(1);
+      expect(result.effects[0]).toMatchObject({ type: 'request-payment', userId: 'B', amount: 3000 });
+    } else {
+      expect(result.state.offer).toBeNull();
+      expect(result.effects).toEqual([]);
+    }
+  });
+  it('AC-16-3 / 대기자 없음 — 결제 요청·확정 없음', () => {
+    const result = reduce(vacant({ candidates: [] }), { type: 'vacancy', atMs: at('14:15:00') });
+    expect(result.state.offer).toBeNull();
+    expect(result.state.confirmed).toBeNull();
+    expect(result.effects).toEqual([]);
   });
 });
 
-describe('운영자 취소 — 승계 금지·연결 대기 취소', () => {
-  it('AC-12-1·AC-15-1 / 운영자 취소는 전액 환불 요청·연결 대기 취소이며 승계하지 않는다', async () => {
-    const state = fixture();
-    // 같은 충전기의 다음 구간 예약과 그 대기는 별도로 유지한다.
-    const other: Reservation = { ...state.reservations[0]!, id: 'other', userId: 'other-driver',
-      originalStartMs: seoul('15:30:00'), endMs: seoul('16:00:00') };
-    const otherWaiter: Waiter = { ...state.waiters[0]!, id: 'other-wait', userId: 'other-waiter',
-      originalStartMs: seoul('15:30:00'), endMs: seoul('16:00:00') };
-    state.reservations.push(other);
-    state.waiters.push(otherWaiter);
-    const result = await reduce(state, { type: 'operator-cancel', reservationId: 'original', atMs: seoul('14:05:00') });
-    expect(reservation(result.state)).toMatchObject({ status: 'cancelled', cancellationReason: 'operator', refundAmount: 3000 });
-    expect([...result.state.cancelledWaiterIds].sort()).toEqual(['wait-B', 'wait-C']);
-    expect(activeRequests(result.state)).toEqual([]);
-    expect(result.state.noShowReservationIds).toEqual([]);
-    expect(result.effects).toEqual([{ type: 'refund', reservationId: 'original', amount: 3000 }]);
-    expect(reservation(result.state, 'other')).toEqual(other);
-    expect(result.state.waiters.find((row) => row.id === 'other-wait')).toEqual(otherWaiter);
+describe('AC-11-3 / T-33 — 정확히 요청 +10분 만료', () => {
+  it.each(['14:15:00.000', '14:15:00.001'])('%s — B 만료, C 요청과 새 10분 기한', (time) => {
+    const result = reduce(requested(), { type: 'tick', atMs: at(time) });
+    expect(result.state.expiredOffers).toEqual([requested().offer]);
+    expect(result.state.offer).toEqual({
+      userId: 'C', requestedAtMs: at(time),
+      expiresAtMs: at(time === '14:15:00.000' ? '14:25:00.000' : '14:25:00.001'), amount: 3000,
+    });
+    expect(result.state.confirmed).toBeNull();
+    expect(result.effects).toEqual([{
+      type: 'request-payment', userId: 'C', amount: 3000,
+      expiresAtMs: at(time === '14:15:00.000' ? '14:25:00.000' : '14:25:00.001'),
+    }]);
   });
-
-  it('AC-15-2 / 운영자 취소를 반복해도 추가 환불·대기 취소·승계를 생성하지 않는다', async () => {
-    const first = await reduce(fixture(), { type: 'operator-cancel', reservationId: 'original', atMs: seoul('14:05:00') });
-    const repeated = await reduce(first.state, { type: 'operator-cancel', reservationId: 'original', atMs: seoul('14:05:00') });
+  it('AC-11-3·AC-16-3 / 만료 이벤트 반복 — C 요청을 중복하거나 기한을 늘리지 않음', () => {
+    const first = reduce(requested(), { type: 'tick', atMs: at('14:15:00') });
+    const repeated = reduce(first.state, { type: 'tick', atMs: at('14:15:00.001') });
+    expect(first.state.offer?.userId).toBe('C');
+    expect(first.effects).toHaveLength(1);
     expect(repeated.state).toEqual(first.state);
     expect(repeated.effects).toEqual([]);
+  });
+  it.each(['14:15:00.000', '14:15:00.001'])('%s — 같은 시각 이상에 처음 확인한 B 승인은 전액 환불, 승계 없음', (time) => {
+    const result = reduce(requested(), {
+      type: 'verified-payment', atMs: at(time), userId: 'B', paymentId: 'late-B',
+      amount: 3000, currency: 'KRW', method: '카드', status: 'DONE',
+    });
+    expect(result.state.confirmed).toBeNull();
+    expect(result.effects.filter((effect) => effect.type === 'refund'))
+      .toEqual([{ type: 'refund', paymentId: 'late-B', amount: 3000 }]);
+    expect(result.state.refundRequestedPaymentIds).toContain('late-B');
+  });
+  it('AC-11-3·AC-05-4 / 만료 후 C 요청 중 B 늦은 승인 반복 — C 보호, 환불 요청 1회', () => {
+    const expired = reduce(requested(), { type: 'tick', atMs: at('14:15:00') });
+    const event: SuccessionEvent = {
+      type: 'verified-payment', atMs: at('14:15:00'), userId: 'B', paymentId: 'late-B',
+      amount: 3000, currency: 'KRW', method: '카드', status: 'DONE',
+    };
+    const first = reduce(expired.state, event);
+    const repeated = reduce(first.state, { ...event, atMs: at('14:15:00.001') });
+    expect(first.state.offer).toEqual(expired.state.offer);
+    expect(first.state.offer?.userId).toBe('C');
+    expect(first.state.confirmed).toBeNull();
+    expect(first.effects).toEqual([{ type: 'refund', paymentId: 'late-B', amount: 3000 }]);
+    expect(repeated.state).toEqual(first.state);
+    expect(repeated.effects).toEqual([]);
+  });
+});
+
+describe('AC-11-7 / T-34 — 기한 내 승인에도 노쇼 승계 잔여시간 재검사', () => {
+  function cRequested(): SuccessionState {
+    return vacant({
+      originalEndMs: at('15:00:00'), candidates: [{ userId: 'C', appliedAtMs: at('10:00:01') }],
+      offer: { userId: 'C', requestedAtMs: at('14:25:00'), expiresAtMs: at('14:35:00'), amount: 3000 },
+    });
+  }
+  function approval(time: string): SuccessionEvent {
+    return { type: 'verified-payment', atMs: at(time), userId: 'C', paymentId: 'payment-C',
+      amount: 3000, currency: 'KRW', method: '카드', status: 'DONE' };
+  }
+  it.each([
+    { time: '14:29:59.999', deadline: '14:44:59.999', label: '30분 +1ms' },
+    { time: '14:30:00.000', deadline: '14:45:00.000', label: '정확히 30분' },
+  ])('$label — 승인 시 잔여 조건 통과, 원래 종료 유지', ({ time, deadline }) => {
+    const result = reduce(cRequested(), approval(time));
+    expect(result.state.confirmed).toEqual({
+      userId: 'C', confirmedAtMs: at(time), originalStartMs: at('14:00:00'),
+      originalEndMs: at('15:00:00'), checkInDeadlineMs: at(deadline),
+    });
+    expect(result.effects).toEqual([]);
+  });
+  it.each(['14:30:00.001', '14:30:01', '14:34:59.999', '14:35:00.000'])('%s — 승인 시 잔여 30분 미만, 승계 없이 3,000원 전액 환불', (time) => {
+    const result = reduce(cRequested(), approval(time));
+    expect(result.state.confirmed).toBeNull();
+    expect(result.state.originalEndMs).toBe(at('15:00:00'));
+    expect(result.effects).toEqual([{ type: 'refund', paymentId: 'payment-C', amount: 3000 }]);
+    expect(result.state.refundRequestedPaymentIds).toContain('payment-C');
+  });
+  it('AC-05-4 / 잔여 미달 승인 반복 — 환불 요청 한 번만 유지', () => {
+    const first = reduce(cRequested(), approval('14:30:00.001'));
+    const repeated = reduce(first.state, approval('14:30:01'));
+    expect(first.effects).toEqual([{ type: 'refund', paymentId: 'payment-C', amount: 3000 }]);
+    expect(repeated.state).toEqual(first.state);
+    expect(repeated.effects).toEqual([]);
+  });
+  it.each([
+    { time: '14:30:00.000', allowed: true, deadline: '14:40:00.000' },
+    { time: '14:30:00.001', allowed: false, deadline: '14:40:00.001' },
+  ])('AC-11-3·AC-11-4 / $time — 다음 대기자 요청 시에도 잔여 30분 검사', ({ time, allowed, deadline }) => {
+    const state = vacant({ originalEndMs: at('15:00:00'), offer: {
+      userId: 'B', requestedAtMs: at('14:20:00'), expiresAtMs: at('14:30:00'), amount: 3000,
+    } });
+    const result = reduce(state, { type: 'tick', atMs: at(time) });
+    expect(result.state.expiredOffers).toEqual([state.offer]);
+    expect(result.state.confirmed).toBeNull();
+    if (allowed) {
+      expect(result.state.offer?.userId).toBe('C');
+      expect(result.effects).toEqual([{ type: 'request-payment', userId: 'C', amount: 3000, expiresAtMs: at(deadline) }]);
+    } else {
+      expect(result.state.offer).toBeNull();
+      expect(result.effects).toEqual([]);
+    }
+  });
+});
+
+describe('US-11 — 결제 대기와 승인 확정의 구분', () => {
+  it.each(['14:14:59', '14:14:59.999'])('AC-11-2 / %s — 10분 직전 미결제는 B의 기회 유지·예약 미확정', (time) => {
+    const state = requested();
+    const result = reduce(state, { type: 'tick', atMs: at(time) });
+    expect(result.state).toEqual(state);
+    expect(result.effects).toEqual([]);
+  });
+  it.each(['14:14:59', '14:14:59.999'])('AC-11-2·AC-11-5·AC-08-4 / %s — 10분 이내 승인은 원래 종료 보존·확정 +15분 기한', (time) => {
+    const result = reduce(requested(), {
+      type: 'verified-payment', atMs: at(time), userId: 'B', paymentId: 'payment-B',
+      amount: 3000, currency: 'KRW', method: '카드', status: 'DONE',
+    });
+    expect(result.state.confirmed).toEqual({
+      userId: 'B', confirmedAtMs: at(time), originalStartMs: at('14:00:00'),
+      originalEndMs: at('15:30:00'),
+      checkInDeadlineMs: at(time === '14:14:59' ? '14:29:59' : '14:29:59.999'),
+    });
+    expect(result.effects).toEqual([]);
   });
 });

@@ -9,5 +9,5 @@
     "types": ["node"],
     "skipLibCheck": true
   },
-  "include": ["src/rules/**/*.ts", "src/payments/**/*.ts", "src/mcp/**/*.ts", "tests/rules/**/*.ts", "tests/payments/**/*.ts", "tests/mcp/**/*.ts", "vitest.config.ts"]
+  "include": ["src/rules/**/*.ts", "src/mcp/**/*.ts", "src/cli/**/*.ts", "tests/rules/**/*.ts", "tests/mcp/**/*.ts", "vitest.config.ts"]
 }
