@@ -1,63 +1,47 @@
-# 실습 하네스 구성
+# ev-booking 하네스 구성
 
-## 구성표
+하네스는 에이전트가 따르는 문서, 작업 절차, 실행 도구, 검증·차단 장치의 구성이다.
+아래는 현재 저장소의 파일과 기존 검증 기록을 확인한 결과이다. 계획에만 있는 기능은 구현 완료로 간주하지 않는다.
 
-| 구성 요소 | 파일 | 역할 | 적용 시점·한계 |
+## 구성 목록
+
+| 구성 | 파일·위치 | 역할·실행 방법 | 현재 범위·한계 |
 |---|---|---|---|
-| 작업 지침 | [AGENTS.md](../AGENTS.md) | 필수 문서, 작업 범위, 도메인 규칙, 검증 기록과 막혔을 때의 처리 규칙을 안내한다. 훅 차단 시 우회 금지·BLOCKED 보고, 정책 변경 시 테스트 수정의 사람 인계, 같은 테스트의 세 번 연속 실패 시 중단을 정한다. | 작업 시작부터 완료 보고까지 코덱스가 따른다. 문서 자체가 도구 실행을 차단하는 것은 아니다. |
-| 헌법 | [.specify/memory/constitution.md](../.specify/memory/constitution.md) | 문서 기반 정책, 로컬 시연·데이터 보호, AC별 테스트 작성 → 사용자 확인 → 실패 확인 → 구현, 구현 중 테스트 불변과 검증 증거를 정한다. | 기능 착수·구현·완료 검토에 적용한다. 정책 변경에 따른 테스트 수정은 AGENTS.md의 사람 인계 절차를 따른다. 조건부 AC를 확정하지 않는다. |
-| 실행 전 가드 | [.codex/guard.sh](../.codex/guard.sh) | PreToolUse 입력을 검사해 tests 경로의 파일 변경 및 토스 실제 키 접두사가 포함된 명령·패치를 거부하고 한국어 이유를 반환한다. | hooks.json의 Bash·apply_patch matcher에 연결하도록 정의되어 있다. 문자열 검사여서 모든 변경 경로를 탐지하지 못한다. 차단되면 AGENTS.md에 따라 우회 없이 멈춘다. |
-| 종료 검증 | [.codex/verify.sh](../.codex/verify.sh) | 로컬 Vitest와 TypeScript로 `npx vitest run`과 `npx tsc --noEmit`을 실행한다. 실패한 테스트 이름·실행 오류·타입 오류를 담아 Stop의 block을 반환한다. | `stop_hook_active=true`이면 재검사 없이 종료한다. 실패 횟수를 저장하거나 세 번 연속 실패를 자동 판정하지 않는다. 횟수 추적·중단·기록은 AGENTS.md를 따르는 코덱스의 책임이다. |
+| 작업 지침 | [AGENTS.md](../AGENTS.md) | 필수 문서 읽기, 정책 확인, 순수 함수 경계, 데이터·키 보호, 중단·보고 기준 | 훅 차단 시 즉시 사용자에게 질문. 정책상 테스트 변경은 제안만 정리. 같은 테스트 세 번 연속 실패 시 중단 |
+| 제품 정책·수용 기준·작업 목록 | [prd.md](prd.md), [acceptance.md](acceptance.md), [tasks.md](tasks.md) | US·AC·T·C 번호로 정책·검증 범위·선행 조건 추적 | 조건부 AC와 미확정 C는 사용자 답변 필요. C-10은 Node.js 24·TypeScript·Vitest·`src/rules`만 부분 확정 |
+| 개발 헌법 | [.specify/memory/constitution.md](../.specify/memory/constitution.md) | AC별 테스트 작성 → 사용자 확인 → 실제 실패 확인 → 구현. 구현 중 테스트 불변, 결과 상태 구분 | 버전 1.0.0. 테스트 오류·정책 변경 시 구현 중단 후 별도 테스트 단계로 진행 |
+| Spec Kit 구성 | `.specify/integration.json`, `.specify/init-options.json`, `.specify/scripts/bash/`, `.specify/templates/`, `.specify/workflows/` | Codex skills 방식의 Spec Kit 1.1.0 구성, 명세·계획·작업 생성과 선행 확인 스크립트·템플릿 | `.specify/extensions.yml`은 없음. 기능 검증 기록에서도 `before_implement`·`after_implement` 확장 훅은 실행할 설정이 없다고 기록 |
+| 프로젝트 스킬 | `.agents/skills/speckit-*/SKILL.md` | specify, clarify, plan, tasks, implement, analyze, checklist, constitution, converge, taskstoissues의 10개 작업 절차 | 스킬 파일이 있는 것과 각 절차를 실행·완료한 것은 구분 |
+| 기능별 명세·증거 | `specs/001-reservation-compatibility-rules/` | spec·plan·research·data-model·contracts·tasks·quickstart·validation·checklists·evidence로 설계와 Red/Green 추적 | [validation.md](../specs/001-reservation-compatibility-rules/validation.md)에 겹침 판정 US1의 승인 해시·31개 Red/Green 기록. 커넥터 US2·US3 완료 증거는 없음 |
+| 실행·의존성 | [package.json](../package.json), `package-lock.json` | Node.js `24.x`; TypeScript `7.0.2`, Vitest `5.0.3`, `@types/node` `24.19.1` 버전 고정 | 개발 명령은 `test:rules`, `typecheck`. 화면·서버 실행·배포 명령 없음 |
+| 도메인 규칙 | `src/rules/{index,types,overlap,refund,checkin}.ts` | 공개 진입점에서 겹침, 사용자 취소·환불 요청, 일반 체크인 시각 판정 순수 함수 제공 | 시간·상태를 입력받고 결과·효과 요청 반환. 실제 환불·승계·소유자 검사·저장·화면은 별도 영역 |
+| 규칙 테스트 | `tests/rules/{overlap,refund,checkin}.test.ts` | `npm run test:rules` | 겹침 31개, 사용자 취소·환불 12개, 일반 체크인 시각 12개, 총 55개. 부분 규칙 검증이며 전체 AC·서비스 통과가 아님 |
+| 테스트 수집 설정 | [vitest.config.ts](../vitest.config.ts) | Node 환경에서 `tests/rules/**/*.test.ts` 수집. `passWithNoTests: false` | 테스트가 없는 실행을 성공으로 처리하지 않음 |
+| 타입 검사 | [tsconfig.json](../tsconfig.json) | `npm run typecheck` → `tsc --noEmit`; strict·NodeNext·ES2023 | 검사 범위는 `src/rules`, `tests/rules`, Vitest 설정. 타입 통과는 기능 실행 통과와 별개 |
+| 훅 이벤트 연결 설정 | [.codex/hooks.json](../.codex/hooks.json) | `UserPromptSubmit`·모든 `PreToolUse` → `guard.sh` (10초), `Stop` → `verify.sh` (300초) | 설정 파일 존재·직접 검증과 사용자 신뢰 후 실제 이벤트 활성화는 별개. 실제 연결은 기존 기록상 `NOT_RUN` |
+| 입력·테스트 보호 훅 | [.codex/guard.sh](../.codex/guard.sh) | stdin의 훅 JSON 또는 명령·패치를 검사. 통과 `0`, 차단 `2`; 입력을 실행하거나 원문을 출력하지 않음 | 실제 결제 키 접두사, `tests/` 쓰기·추가·삭제·이동·스냅샷 갱신 차단. 단순 조회·테스트 실행 허용. 경로 정규화·기존 심볼릭 링크 검사. 동적·인코딩된 명령 전체를 분석하는 샌드박스는 아님 |
+| 완료 전 검사 훅 | [.codex/verify.sh](../.codex/verify.sh) | 저장소 루트에서 테스트·타입 검사를 모두 실행. 검사별 120초 제한, 검사 출력 stderr·훅 JSON stdout | 기존 스크립트는 첫 실패 시 `2`로 한 번의 수정을 요청하고, 이어진 Stop 실패 시 `continue: false`로 중단. 재시도 판정은 `stop_hook_active`, 누적 카운터 없음 |
+| 생성물·환경 파일 제외 | [.gitignore](../.gitignore) | 의존성·빌드·커버리지·로그·`.env*` 등을 Git에서 제외 | 파일 무시 규칙이며 비밀값 검사나 실행 권한 차단을 대신하지 않음 |
 
-연결 정의는 [.codex/hooks.json](../.codex/hooks.json), 직접 입력 시험은 [.codex/selftest.py](../.codex/selftest.py)에 있다. 아래 기존 검증 기록은 직접 시험 결과이며 실제 Codex 이벤트 연결·신뢰 등록은 `NOT_RUN`으로 기록되어 있다. 이번 문서 갱신에서 훅 코드나 신뢰 설정은 변경하지 않았다.
+## 중단 규칙과 기존 훅의 관계
 
-## 중단 보고와 실패 기록
-
-훅의 거부나 Stop의 block이 발생하면 구현 수정으로 자동 재진행하지 않고 작업을 `BLOCKED`로 멈춘다. verify.sh가 반환하는 구현 수정 안내보다 AGENTS.md의 중단 지침을 따른다. 차단 원인과 가능한 선택지(예: 사람이 정책·테스트 검토, 환경 준비, 요청 범위 조정, 작업 보류)를 보고하고 사용자 결정을 기다린다. 선택지는 해당 차단 이유에 맞춰 제시하며 우회를 제안하지 않는다.
-
-정책 변경 인계에는 AC 번호, 현재 기준과 변경안, 테스트 파일·정확한 테스트 이름, 현재 기대 결과와 변경 후 기대 결과를 포함한다. 코덱스가 테스트 파일을 직접 수정하지 않는다.
-
-같은 테스트의 세 번 연속 실패는 아래 형식으로 이 문서에 기록한다. 세 번째 실패 후에는 추가 수정·재실행을 멈추며, 실행한 테스트의 `FAIL`과 작업 중단의 `BLOCKED`를 구분한다. 아래는 기록 양식이며 실제 실패 기록이 아니다.
-
-| 항목 | 기록할 내용 |
-|---|---|
-| 대상 | 날짜, 관련 T·AC, 테스트 파일과 정확한 테스트 이름 |
-| 첫 번째 실패 | 실행 명령, 실패 이유·결과, 해당 실행 전 시도한 수정(없으면 없음) |
-| 두 번째 실패 | 실행 명령, 실패 이유·결과, 해당 실행 전 시도한 수정 |
-| 세 번째 실패 | 실행 명령, 실패 이유·결과, 해당 실행 전 시도한 수정 |
-| 중단·인계 | 테스트 FAIL / 작업 BLOCKED, 남은 문제, 사용자가 고를 수 있는 선택지 |
-
-로그·오류 근거에서 키와 비밀값을 제거한다. 훅 차단으로 시험 자체가 실행되지 않았다면 테스트 실패로 꾸미지 않고 차단 사실을 기록한다.
-
-## 파일과 동작
-
-- [guard.sh](../.codex/guard.sh): PreToolUse 입력 JSON을 `jq`로 읽고 한국어 이유를 담은 `permissionDecision: deny`를 반환한다. 통과 시 `{}`를 반환하여 기존 권한 검사를 유지한다.
-- [verify.sh](../.codex/verify.sh): Stop 입력의 `stop_hook_active`가 불리언 `true`이면 검사 없이 `{}`로 종료한다. 그 외에는 스크립트 위치 기준 프로젝트 루트에서 `npx vitest run`(JSON 리포터 옵션 포함), `npx tsc --noEmit`을 모두 실행한다. 실패 시 `decision: block`과 실패한 테스트 이름 또는 수집·실행 오류/타입 오류를 반환한다.
-- [hooks.json](../.codex/hooks.json): Bash·apply_patch와 Stop 연결 정의. 훅 신뢰 등록은 하지 않았다.
-- [selftest.py](../.codex/selftest.py): 직접 입력 시험을 재현한다. 실행: `python3 .codex/selftest.py`.
-
-두 훅은 Bash와 `jq`를 사용하며 실행 권한을 부여했다. verify는 로컬 Vitest·tsc가 없으면 검증 실패를 반환하며 패키지를 설치하지 않는다. 진단에 결제 키 문자열이 있으면 값을 가린다. 임시 리포트는 종료 시 삭제한다.
-
-## guard 검사 범위와 한계
-
-- 패치의 Add File·Update File·Delete File·Move to 대상 경로에서 `tests` 경로 구성요소를 검사한다. 소스 내용의 `tests/` 참조만으로 막지 않는다.
-- 셸 명령과 작업 디렉터리에 `tests` 경로 구성요소가 있으면 단순 조회 명령과 갱신 옵션 없는 테스트 실행만 허용한다. 리다이렉션·파이프·명령 연결·치환·스크립트 실행 등은 보수적으로 차단한다. 읽기 전용 복합 명령도 차단될 수 있다.
-- 명령·패치에서 토스 실제 키의 네 접두사를 검사한다. 시험에는 실제 키 대신 가짜 문자열을 사용한다. 차단 이유에 입력 원문을 넣지 않는다.
-- 문자열 검사는 완전한 셸 분석이나 보안 격리가 아니다. 변수로 조립한 경로·키, 심볼릭 링크, 외부 스크립트 내부 쓰기, `tests` 이름 없이 상위 디렉터리 전체를 바꾸는 명령 등은 놓칠 수 있다. 다른 도구 경로도 이 matcher의 범위 밖이다.
-- Stop은 첫 실패 뒤 한 번만 계속 고치도록 요청한다. 다음 Stop에서 active가 true이면 오류가 남아 있어도 종료한다. 최종 성공 보장이 아니다.
-
-## 직접 검증 결과 (2026-10-06)
-
-| 검사 | 상태 | 근거 |
+| 상황 | 에이전트가 할 일 | 자동화 범위 |
 |---|---|---|
-| Bash 문법·JSON 설정·실행 권한 | PASS | `bash -n`, `jq`, 실행 비트 확인 |
-| 차단·허용 입력 및 Stop 동작 직접 시험 | PASS | selftest 53개. 위험 셸/패치는 실행하지 않고 stdin으로 전달 |
-| 테스트 실패 이름·타입 오류 반환 | PASS | 격리 임시 프로젝트의 실제 Vitest 실패·tsc 오류 확인. 테스트 실패 후 tsc도 실행 |
-| 반복 방지·의존성 누락·수집 실패 | PASS | active true 시 종료, 누락·수집 실패 시 block 확인 |
-| 현재 프로젝트의 두 검사 | PASS | verify를 active false로 직접 실행, 두 검사 종료 코드 0, 출력 `{}` |
-| 기존 tests 파일 보존 | PASS | 직접 시험 전후 파일 목록·SHA-256 일치 |
-| Codex 실제 이벤트 연결·신뢰 등록 | NOT_RUN | 요청대로 아직 신뢰하지 않음. 자동 차단·자동 재진행을 실증한 결과가 아님 |
+| 훅이 작업을 차단 | 즉시 중단, 차단 이유·작업·사용자 결정 사항 보고 후 질문. 우회·비활성화 금지 | AGENTS.md의 사용자 지침이 기존 `verify.sh`의 자동 수정 요청보다 우선. 사용자 답변 전 수정·재시도 금지 |
+| 정책상 테스트 변경 필요 | 구현 중단, 관련 번호·테스트·현재/제안 기대값·이유·영향을 정리하여 제시 | 테스트나 훅 설정을 직접 바꾸지 않음. 승인 후 별도 테스트 단계와 재확인 필요 |
+| 같은 테스트 세 번 연속 실패 | 세 번째 실패 직후 중단, 세 번의 실행·오류·수정 시도를 보고 후 질문 | 에이전트 실행 이력으로 집계. 현재 `verify.sh`에는 이 집계가 없음. 더 이른 훅 차단 시 즉시 중단 |
+| Stop 재검증 실패 | 실패로 보고하고 중단 | 훅 JSON 전달 성공의 종료 코드 `0`은 테스트 `PASS`가 아님. 수동 `--retry` 실패는 `1` |
 
-프로젝트 정책의 AC 전체 통과, 브라우저 및 토스 실연결 검증을 의미하지 않는다.
+이번 갱신은 AGENTS.md의 중단 지침과 이 구성표 작성이다. 훅 스크립트와 테스트·검사 설정은 변경하지 않았다.
 
-형식 근거: [OpenAI 공식 Hooks 문서](https://learn.chatgpt.com/docs/hooks). PreToolUse 거부와 Stop 계속 진행 출력 형식, 프로젝트 훅 검색 위치를 확인했다. 현재 로컬 CLI는 0.160.0이다. 전역 신뢰 설정이나 훅 신뢰 상태를 변경하지 않았다.
+## 검증 근거
+
+| 검사 | 근거 | 상태·해석 |
+|---|---|---|
+| 구성 파일·지침·연결 대상 확인 | 이번 작업의 저장소 파일 정적 확인 | `PASS` — 구성 확인만 해당 |
+| guard 허용·차단 및 verify 재시도 모의 검증 | [.codex/README.md](../.codex/README.md)의 기존 직접 검증 기록 | 기존 기록 `PASS` — 이번 작업에서 재실행하지 않음 |
+| 규칙 테스트 | 이번 작업에서 `npm run test:rules` 실행 | `PASS` — 종료 코드 `0`, 3개 파일·55개 테스트 통과 |
+| 타입 검사 | 이번 작업에서 `npm run typecheck` 실행 | `PASS` — 종료 코드 `0`, 타입 오류 없음 |
+| 사용자 신뢰 후 실제 훅 이벤트 연결 | `.codex/README.md` | `NOT_RUN` — 설정 존재나 직접 실행만으로 활성화를 주장하지 않음 |
+| 세 번 연속 실패 시 자동 차단 | AGENTS.md 및 현재 훅 소스 확인 | `NOT_RUN` — 자동 집계 구현 없음; 에이전트 지침으로 적용 |
+| 모바일 브라우저·토스 테스트 실연결 | 이번 문서 작업 범위 밖 | `NOT_RUN` |

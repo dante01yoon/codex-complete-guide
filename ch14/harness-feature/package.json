@@ -7,9 +7,10 @@
     "node": "24.x"
   },
   "scripts": {
+    "lint": "node scripts/lint-ui.mjs",
+    "check:lint": "node scripts/check-lint.mjs",
     "dev": "node scripts/dev.mjs",
     "check:ui": "node scripts/check-ui.mjs",
-    "lint:arch": "node scripts/lint-arch.mjs",
     "test:rules": "vitest run tests/rules",
     "typecheck": "tsc --noEmit"
   },

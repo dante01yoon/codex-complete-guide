@@ -1,5 +1,5 @@
 node_modules/
-artifacts/
+artifacts/ui/
 dist/
 build/
 coverage/
@@ -12,4 +12,3 @@ Thumbs.db
 *.swp
 .vscode/
 .idea/
-node_modules
