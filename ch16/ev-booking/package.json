@@ -7,20 +7,23 @@
     "node": "24.x"
   },
   "scripts": {
-    "demo:checkout": "tsx src/payments/demo-server.ts",
-    "mcp": "tsx src/mcp/stdio.ts",
-    "approve": "tsx src/mcp/approve.ts",
-    "test:rules": "vitest run tests/rules",
+    "demo:agents": "node src/graph-view/server.mjs",
+    "demo:payment": "node src/demo/server.ts",
+    "mcp:booking": "node --import tsx src/mcp/server.ts",
+    "approve": "node --import tsx src/cli/approve.ts",
+    "test:rules": "vitest run",
+    "test:mcp": "vitest run tests/mcp",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
+    "@modelcontextprotocol/client": "2.3.1",
     "@types/node": "24.19.1",
-    "tsx": "^4.23.15",
     "typescript": "7.0.2",
     "vitest": "5.0.3"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.32.1",
-    "zod": "^4.6.5"
+    "@modelcontextprotocol/server": "2.3.1",
+    "tsx": "4.23.15",
+    "zod": "4.6.6"
   }
 }

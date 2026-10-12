@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>16장 · 에이전트 작업 기록</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='10' fill='%23127360'/%3E%3Cpath d='M10 12h20M10 20h20M10 28h20' stroke='white' stroke-width='3'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/refinements.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <header class="topbar"><a class="brand" href="/">16<span>에이전트 작업 기록</span></a><div class="topmeta">ev-booking <span class="separator">/</span> 문서 기반 · 읽기 전용</div><a class="source-link" href="/docs/agents.md" target="_blank" rel="noopener">원본 그래프 ↗</a></header>
+  <main>
+    <div class="heading"><div><h1>협업의 흐름을 따라가세요.</h1><p>인계 기록을 고르면, 전달 그래프의 해당 화살표가 강조됩니다.</p></div><span class="chapter">CHAPTER 16</span></div>
+    <div id="error" role="alert" hidden></div>
+    <div id="loading" role="status">문서에서 작업 기록을 읽고 있습니다…</div>
+    <div id="content" hidden>
+      <section class="workspace" aria-label="전달 그래프와 인계 기록">
+        <div class="graph-panel">
+          <div class="panel-heading"><div><h2>전달 그래프</h2><p>docs/agents.md의 협업 절차</p></div><div class="legend"><span class="legend-line"></span>전체 절차 <span class="legend-line active"></span>선택한 인계</div></div>
+          <div class="graph-scroll" tabindex="0" aria-label="전달 그래프. 좁은 화면에서는 좌우 스크롤로 전체 절차 확인"><svg id="graph" viewBox="0 0 820 780" role="img" aria-labelledby="graph-title graph-description"><title id="graph-title">역할별 에이전트 전달 그래프</title><desc id="graph-description">사용자, 계획, 테스트, 구현, 리뷰, 완료 보고 및 정책 확인과 중단 분기. 인계 선택 시 대응 화살표를 강조합니다.</desc></svg></div>
+          <div class="selection" aria-live="polite"><span class="selection-dot"></span><div><strong id="selected-title"></strong><p id="selected-edge"></p></div></div>
+        </div>
+        <aside class="timeline-panel">
+          <div class="panel-heading"><div><h2>인계 기록</h2><p id="run-scope"></p></div><span id="event-count" class="count"></span></div>
+          <div class="run-control"><label for="run">작업 흐름</label><select id="run"></select></div>
+          <p class="order-note">문서에 적힌 순서 · 시각 미기록은 그대로 표시</p>
+          <ol id="timeline" aria-label="문서 순서별 인계 기록"></ol>
+          <div class="record-detail"><div class="detail-heading"><span>선택한 기록의 근거</span><a id="record-source" target="_blank" rel="noopener"></a></div><p id="record-text"></p><small>화살표는 문서의 협업 단계에 대응합니다. 기록의 시각은 전송 시각으로 추정하지 않습니다.</small></div>
+        </aside>
+      </section>
+      <section class="results" aria-labelledby="results-title">
+        <div class="results-heading"><div><h2 id="results-title">수용 기준별 마지막 결과</h2><p id="scope-note"></p></div><div class="result-control"><label for="filter">표시</label><select id="filter"><option value="recorded">결과 기록 있음</option><option value="all">모든 수용 기준</option><option value="missing">기록 없음</option><option value="PASS">PASS</option><option value="NOT_RUN">NOT_RUN</option></select></div></div>
+        <div class="result-summary" id="summary"></div>
+        <div class="table-scroll"><table><caption class="sr-only">검증 흐름별 마지막으로 기록된 수용 기준의 부분 검증 결과와 근거</caption><thead><tr><th scope="col">수용 기준</th><th scope="col">마지막 결과</th><th scope="col">검증한 범위 · 남은 제한</th><th scope="col">원본 근거</th></tr></thead><tbody id="results-body"></tbody></table></div>
+        <p class="table-note">MCP는 명시된 후속 서버 기록을 우선하고, 없으면 선행 순수 규칙 기록을 표시합니다. 결제 테스트와 화면 시연은 별도 흐름으로 표시합니다. 시각·날짜·실행 근거가 없는 결과를 만들지 않습니다.</p>
+      </section>
+      <footer><span>그래프는 절차, 인계는 기록, 결과는 해당 검증 범위입니다.</span><span id="doc-count"></span></footer>
+    </div>
+  </main>
+</body>
+</html>

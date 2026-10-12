@@ -1,14 +1,13 @@
-[mcp_servers.booking]
-command = "npm"
-args = ["run", "mcp"]
-cwd = "/Users/dante/Documents/Codex/2026-10-05/ev-booking"
-startup_timeout_sec = 20
+[mcp_servers.ev_booking]
+command = "node"
+args = ["--import", "tsx", "src/mcp/server.ts"]
+cwd = "/Users/dante/Documents/Codex/2026-10-12/reshoot/ev-booking"
 
-[mcp_servers.booking.env]
-# npm banners must not mix with the MCP JSON-RPC stream.
-NPM_CONFIG_LOGLEVEL = "silent"
-# Process-local demo account; this is not login authentication.
-BOOKING_DEMO_USER_ID = "driver-a"
+[mcp_servers.ev_booking.env]
+EV_BOOKING_ROOT = "/Users/dante/Documents/Codex/2026-10-12/reshoot/ev-booking"
+EV_BOOKING_SOURCE_DATA_DIR = "/Users/dante/Documents/Codex/2026-10-12/reshoot/ev-map/data"
+EV_BOOKING_ACTOR_ID = "test-driver-1"
+EV_BOOKING_LINK_BASE_URL = "http://127.0.0.1:5180"
 
-[mcp_servers.booking.tools.request_payment]
+[mcp_servers.ev_booking.tools.request_payment_link]
 approval_mode = "prompt"
