@@ -1,84 +1,124 @@
-import { getGate, crossGate, isOnTrack } from './track.js';
+export const TRACK = Object.freeze({
+  radiusX: 84,
+  radiusZ: 52,
+  halfWidth: 7.5,
+  laps: 3,
+  checkpoints: 16,
+});
 
-export const RECORD_KEY = 'oval-racing.records.v1';
-export const TOTAL_LAPS = 3;
+export const TAU = Math.PI * 2;
+const CHECKPOINT_ANGLE = TAU / TRACK.checkpoints;
+const STORAGE_KEY = 'oval-club.best-lap.v1';
+
+export function trackPoint(angle, offset = 0) {
+  return {
+    x: (TRACK.radiusX + offset) * Math.cos(angle),
+    z: -(TRACK.radiusZ + offset) * Math.sin(angle),
+  };
+}
+
+export function trackAngle({ x, z }) {
+  return (Math.atan2(-z / TRACK.radiusZ, x / TRACK.radiusX) + TAU) % TAU;
+}
+
+export function isOnTrack({ x, z }) {
+  const outer = (x / (TRACK.radiusX + TRACK.halfWidth)) ** 2
+    + (z / (TRACK.radiusZ + TRACK.halfWidth)) ** 2;
+  const inner = (x / (TRACK.radiusX - TRACK.halfWidth)) ** 2
+    + (z / (TRACK.radiusZ - TRACK.halfWidth)) ** 2;
+  return outer <= 1 && inner >= 1;
+}
 
 export function formatTime(seconds) {
-  if (!Number.isFinite(seconds) || seconds < 0) return '—';
-  const milliseconds = Math.floor(seconds * 1000 + 1e-7);
+  if (!Number.isFinite(seconds) || seconds < 0) return '--:--.---';
+  const milliseconds = Math.floor(seconds * 1000);
   const minutes = Math.floor(milliseconds / 60000);
-  const wholeSeconds = Math.floor(milliseconds / 1000) % 60;
-  return `${String(minutes).padStart(2, '0')}:${String(wholeSeconds).padStart(2, '0')}.${String(milliseconds % 1000).padStart(3, '0')}`;
+  return `${String(minutes).padStart(2, '0')}:${String(Math.floor(milliseconds / 1000) % 60).padStart(2, '0')}.${String(milliseconds % 1000).padStart(3, '0')}`;
+}
+
+function defaultStorage() {
+  try { return globalThis.localStorage; } catch { return null; }
 }
 
 export class Race {
-  constructor(storage = null) {
+  constructor(storage = defaultStorage()) {
     this.storage = storage;
-    this.records = { lapSeconds: null, raceSeconds: null };
-    this.storageUnavailable = !storage;
+    this.best = null;
+    this.storageAvailable = Boolean(storage);
     try {
-      const saved = JSON.parse(storage?.getItem(RECORD_KEY) || 'null');
-      for (const key of ['lapSeconds', 'raceSeconds']) {
-        if (Number.isFinite(saved?.[key]) && saved[key] > 0) this.records[key] = saved[key];
-      }
-    } catch { /* Invalid stored data is ignored; storage writes may still work. */ }
-    this.gates = [0, 1, 2, 3].map(getGate);
+      const saved = Number(storage?.getItem(STORAGE_KEY));
+      if (Number.isFinite(saved) && saved > 0) this.best = saved;
+    } catch {
+      this.storageAvailable = false;
+    }
     this.reset();
   }
-  reset() {
-    this.state = 'ready'; this.paused = false; this.elapsed = 0; this.lapStartedAt = 0;
-    this.lapTimes = []; this.nextGate = 1; this.lapValid = true;
-    this.newLapRecord = false; this.newRaceRecord = false;
-  }
-  start() { this.reset(); this.state = 'racing'; }
-  pause() { if (this.state === 'racing') this.paused = true; }
-  resume() { this.paused = false; }
-  get currentLap() { return Math.min(this.lapTimes.length + 1, TOTAL_LAPS); }
-  get currentLapTime() {
-    return this.state === 'finished' ? this.lapTimes.at(-1) : this.elapsed - this.lapStartedAt;
-  }
-  addTime(dt) { if (this.state === 'racing' && !this.paused) this.elapsed += dt; }
-  saveRecords() {
-    try {
-      if (!this.storage) throw new Error('Storage unavailable');
-      this.storage.setItem(RECORD_KEY, JSON.stringify(this.records));
-      this.storageUnavailable = false;
-    } catch { this.storageUnavailable = true; }
-  }
-  update(dt, previous, current) {
-    if (this.state !== 'racing' || this.paused) return null;
-    const beforeTime = this.elapsed;
-    this.elapsed += dt;
-    if (!isOnTrack(previous) || !isOnTrack(current)) this.lapValid = false;
 
-    // A lap must visit the three checkpoints in order, then cross the start line.
-    const crossing = crossGate(previous, current, this.gates[this.nextGate]);
-    if (this.nextGate !== 0 && crossing !== null && this.lapValid) {
-      this.nextGate = (this.nextGate + 1) % 4;
+  reset() {
+    this.phase = 'ready';
+    this.elapsed = 0;
+    this.lapElapsed = 0;
+    this.lapTimes = [];
+    this.nextCheckpoint = 1;
+    this.previous = null;
+    this.newBest = false;
+  }
+
+  get lap() { return Math.min(this.lapTimes.length + 1, TRACK.laps); }
+
+  get progress() {
+    return this.phase === 'finished' ? 1
+      : (this.lapTimes.length + (this.nextCheckpoint - 1) / TRACK.checkpoints) / TRACK.laps;
+  }
+
+  start(position) {
+    if (this.phase !== 'ready') return;
+    this.phase = 'racing';
+    this.previous = { angle: trackAngle(position), onTrack: isOnTrack(position) };
+  }
+
+  update(dt, position) {
+    if (this.phase !== 'racing' || !Number.isFinite(dt) || dt <= 0) return null;
+    const current = { angle: trackAngle(position), onTrack: isOnTrack(position) };
+    const previous = this.previous ?? current;
+    this.previous = current;
+
+    // Signed angular change rejects reversing and implausible position jumps.
+    const delta = (current.angle - previous.angle + Math.PI * 3) % TAU - Math.PI;
+    const gateAngle = (this.nextCheckpoint % TRACK.checkpoints) * CHECKPOINT_ANGLE;
+    const toGate = (gateAngle - previous.angle + TAU) % TAU;
+    const crossed = previous.onTrack && current.onTrack && delta > 0 && delta < CHECKPOINT_ANGLE
+      && toGate > 0 && toGate <= delta + 1e-9;
+
+    if (!crossed || this.nextCheckpoint !== TRACK.checkpoints) {
+      this.elapsed += dt;
+      this.lapElapsed += dt;
+      if (crossed) this.nextCheckpoint += 1;
       return null;
     }
-    const finishFraction = crossGate(previous, current, this.gates[0]);
-    if (finishFraction === null) return null;
-    if (!this.lapValid || this.nextGate !== 0) {
-      this.nextGate = 1; this.lapValid = true;
-      // Keep the clock running: failed attempts remain part of this lap's time.
-      return { type: 'retry' };
+
+    // Split the simulation step at the finish line so lap timing is frame independent.
+    const fraction = Math.min(1, toGate / delta);
+    const time = this.lapElapsed + dt * fraction;
+    this.lapTimes.push(time);
+    const isBest = this.best === null || time < this.best;
+    if (isBest) {
+      this.best = time;
+      this.newBest = true;
+      try { this.storage?.setItem(STORAGE_KEY, String(time)); }
+      catch { this.storageAvailable = false; }
     }
-    const crossingTime = beforeTime + dt * finishFraction;
-    const lapTime = crossingTime - this.lapStartedAt;
-    this.lapTimes.push(lapTime);
-    this.lapStartedAt = crossingTime;
-    this.nextGate = 1;
-    const newBest = this.records.lapSeconds === null || lapTime < this.records.lapSeconds;
-    if (newBest) { this.records.lapSeconds = lapTime; this.newLapRecord = true; }
-    if (this.lapTimes.length === TOTAL_LAPS) {
-      this.state = 'finished'; this.elapsed = crossingTime;
-      this.newRaceRecord = this.records.raceSeconds === null || crossingTime < this.records.raceSeconds;
-      if (this.newRaceRecord) this.records.raceSeconds = crossingTime;
-      this.saveRecords();
-      return { type: 'finish', lapTime, newBest };
+
+    if (this.lapTimes.length === TRACK.laps) {
+      this.elapsed += dt * fraction;
+      this.lapElapsed = time;
+      this.phase = 'finished';
+      return { type: 'finish', time, isBest };
     }
-    if (newBest) this.saveRecords();
-    return { type: 'lap', lapTime, newBest, lap: this.lapTimes.length };
+
+    this.elapsed += dt;
+    this.lapElapsed = dt * (1 - fraction);
+    this.nextCheckpoint = 1;
+    return { type: 'lap', time, isBest };
   }
 }
