@@ -3,177 +3,163 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#172d2b" />
-    <title>OVAL — 한 바퀴 더</title>
+    <meta name="theme-color" content="#f8f6f0" />
+    <meta name="description" content="노을빛 서킷에서 즐기는 3D 타임 어택. 당신의 가장 빠른 세 바퀴를 달려보세요." />
+    <title>OVAL CLUB — Sunset Circuit</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23f8f6f0'/%3E%3Cellipse cx='32' cy='32' rx='20' ry='14' fill='none' stroke='%239e411e' stroke-width='8' transform='rotate(-35 32 32)'/%3E%3C/svg%3E" />
     <style>
-      :root { color-scheme: dark; --ink: #f5f3e9; --muted: #b3c0b8; --orange: #ff633b; --glass: rgba(14, 34, 31, .79); }
+      @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600;700;800&display=swap');
+
+      :root { color-scheme: light; --ink: #202a30; --paper: #f8f6f0; --panel: #fffdf8; --muted: #536067; --orange: #9e411e; --line: #b8bfba; }
       * { box-sizing: border-box; }
       html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
-      body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #98b4a7; color: var(--ink); }
-      button { font: inherit; cursor: pointer; }
-      button:focus-visible { outline: 3px solid #fff; outline-offset: 5px; }
+      body { background: var(--paper); color: var(--ink); font-family: 'Barlow', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; font-size: 14px; }
+      button { color: inherit; font: inherit; cursor: pointer; }
+      button:focus-visible { outline: 2px solid var(--orange); outline-offset: 5px; }
+      button:disabled { color: #707b7d; cursor: default; }
       [hidden] { display: none !important; }
-      #viewport { position: fixed; inset: 0; }
-      canvas { display: block; width: 100%; height: 100%; }
-      .vignette { position: fixed; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(8, 24, 22, .35), transparent 24%, transparent 65%, rgba(8, 24, 22, .48)); }
-      body.menu-open .vignette { background: linear-gradient(90deg, rgba(10, 30, 27, .93), rgba(10, 30, 27, .78) 29%, rgba(10, 30, 27, .1) 72%), linear-gradient(0deg, rgba(10, 30, 27, .65), transparent 40%); }
-      .mono { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-variant-numeric: tabular-nums; }
-      .eyebrow { font-size: 11px; font-weight: 600; letter-spacing: .2em; text-transform: uppercase; color: var(--muted); }
-      header { position: fixed; top: 32px; left: 38px; right: 38px; display: flex; align-items: center; justify-content: space-between; gap: 20px; pointer-events: none; }
+      .topbar { height: 85px; display: flex; align-items: center; justify-content: space-between; padding: 0 32px; border-bottom: 1px solid var(--line); gap: 24px; }
       .brand { display: flex; align-items: center; gap: 13px; }
-      .brand-mark { width: 36px; height: 24px; border: 5px solid var(--orange); border-radius: 50%; transform: rotate(-28deg); }
-      .brand-name { font-size: 27px; font-weight: 900; letter-spacing: -.06em; }
-      .brand-divider { width: 1px; height: 22px; background: #ffffff38; margin: 0 6px; }
-      .header-actions { display: flex; gap: 9px; pointer-events: auto; }
-      .quiet-button { border: 1px solid #ffffff38; border-radius: 5px; background: var(--glass); color: var(--ink); padding: 10px 14px; font-size: 12px; backdrop-filter: blur(12px); }
-      .quiet-button:hover { background: #25403a; }
-      #menu { position: fixed; top: 50%; left: max(38px, 6vw); width: min(510px, 85vw); transform: translateY(-46%); }
-      .menu-kicker { display: flex; align-items: center; gap: 12px; margin-bottom: 22px; }
-      .line { width: 28px; height: 2px; background: var(--orange); }
-      h1 { margin: 0 0 22px; font-size: clamp(42px, 5.6vw, 76px); line-height: 1.16; letter-spacing: -.07em; font-weight: 850; }
-      h1 em { font-style: normal; color: var(--orange); }
-      .menu-description { margin: 0 0 29px; max-width: 420px; font-size: 14px; line-height: 1.85; color: #c5d0c7; word-break: keep-all; }
-      .primary-button { display: inline-flex; align-items: center; justify-content: space-between; gap: 45px; min-width: 216px; padding: 17px 22px; border: 0; border-radius: 5px; background: var(--orange); color: #182822; font-size: 15px; font-weight: 800; box-shadow: 0 8px 30px #0002; transition: background .15s, transform .15s; }
-      .primary-button:hover { background: #ff815f; transform: translateY(-2px); }
-      .primary-button:disabled { opacity: .65; cursor: wait; transform: none; }
-      .button-arrow { font-size: 22px; line-height: 1; }
-      .menu-records { margin-top: 30px; display: flex; gap: 33px; }
-      .menu-records strong { display: block; margin-top: 8px; font-size: 19px; font-weight: 500; }
-      .menu-bottom { position: fixed; bottom: 33px; left: 38px; right: 38px; display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; pointer-events: none; }
-      .track-facts { display: flex; gap: 30px; }
-      .track-facts b { display: block; font-size: 24px; font-weight: 500; margin-bottom: 5px; }
-      .menu-controls { font-size: 12px; line-height: 1.8; color: #d6ded6; text-align: right; }
-      kbd { display: inline-block; min-width: 20px; padding: 2px 5px; border: 1px solid #ffffff40; border-radius: 3px; font: 11px ui-monospace, monospace; text-align: center; color: #f5f3e9; }
-      #hud { position: fixed; inset: 0; pointer-events: none; }
-      .lap-hud { position: absolute; top: 26px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 22px; padding: 14px 24px; background: var(--glass); border: 1px solid #ffffff1f; border-radius: 7px; backdrop-filter: blur(12px); }
-      .lap-number { font-size: 32px; font-weight: 600; line-height: 1.1; white-space: nowrap; }
-      .lap-number small { color: #9db0a6; font-size: 17px; }
-      .lap-progress { display: flex; gap: 5px; margin-top: 9px; }
-      .lap-progress i { display: block; width: 27px; height: 3px; background: #ffffff25; }
-      .lap-progress i.active { background: var(--orange); }
-      .lap-progress i.complete { background: #b8d6b8; }
-      .lap-time { font-size: 25px; margin-top: 6px; min-width: 126px; }
-      .right-hud { position: absolute; top: 102px; right: 38px; width: 215px; display: grid; gap: 12px; }
-      .minimap-hud, .times-hud { background: var(--glass); border: 1px solid #ffffff1f; border-radius: 7px; backdrop-filter: blur(12px); }
-      .minimap-hud { padding: 14px 14px 12px; }
-      .minimap-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-      .minimap-legend { display: flex; align-items: center; gap: 6px; font-size: 10px; color: #cad4cc; }
-      .minimap-legend i { width: 6px; height: 6px; border-radius: 50%; background: var(--orange); }
-      #minimap { display: block; width: 100%; height: auto; margin-top: 8px; overflow: hidden; }
-      .times-hud { padding: 19px 20px; }
-      .time-row { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-top: 14px; font-size: 12px; color: #cad4cc; }
-      .time-row > span { white-space: nowrap; }
-      .time-row strong { font-size: 14px; font-weight: 500; color: var(--ink); }
-      .time-row:first-child { display: block; margin: 0 0 17px; padding-bottom: 15px; border-bottom: 1px solid #ffffff20; }
-      .time-row:first-child strong { display: block; margin-top: 8px; font-size: 19px; }
-      .time-row.record strong { color: #ff9579; }
-      .speed-hud { position: absolute; left: 38px; bottom: 33px; padding: 19px 23px; min-width: 202px; background: var(--glass); border-radius: 7px; border: 1px solid #ffffff1f; backdrop-filter: blur(12px); }
-      .speed-value { font-size: 68px; font-weight: 600; letter-spacing: -.07em; line-height: 1; }
-      .speed-value small { font-size: 11px; letter-spacing: .08em; color: #9eb2a5; margin-left: 13px; }
-      .speed-meter { margin-top: 17px; height: 4px; background: #ffffff25; overflow: hidden; }
-      .speed-meter span { display: block; height: 100%; width: 0; background: var(--orange); }
-      .speed-footer { margin-top: 11px; display: flex; justify-content: space-between; font-size: 10px; letter-spacing: .11em; color: #acbdb0; }
-      .status-dot { width: 5px; height: 5px; border-radius: 50%; background: #a7d9a9; display: inline-block; margin-right: 6px; }
-      #surface-status.off-road { color: #ffb082; }
-      #surface-status.off-road .status-dot { background: var(--orange); }
-      .driving-controls { position: absolute; right: 38px; bottom: 34px; text-align: right; font-size: 11px; line-height: 2.1; color: #e3e9df; text-shadow: 0 1px 4px #0008; }
-      #notice { position: absolute; left: 50%; bottom: 46px; transform: translateX(-50%); padding: 13px 20px; background: var(--glass); border: 1px solid #ffffff28; border-radius: 5px; font-size: 13px; white-space: nowrap; text-align: center; }
-      #notice.warning { color: #ffd1a7; border-color: #ff925866; }
-      #dialog-layer { position: fixed; inset: 0; display: grid; place-items: center; background: #0a201b80; backdrop-filter: blur(5px); padding: 20px; }
-      .dialog { width: min(440px, 100%); padding: 36px; background: #172e28; border: 1px solid #ffffff25; border-radius: 12px; box-shadow: 0 24px 80px #0004; }
-      .dialog h2 { margin: 12px 0; font-size: 35px; letter-spacing: -.05em; }
-      .dialog p { color: #bdcbbf; font-size: 13px; line-height: 1.8; }
-      #result-total { margin: 23px 0; font-size: 43px; color: var(--orange); }
-      #result-laps { display: grid; gap: 12px; padding: 17px 0; margin: 0 0 24px; list-style: none; border-top: 1px solid #ffffff20; border-bottom: 1px solid #ffffff20; }
-      #result-laps li { display: flex; justify-content: space-between; font-size: 13px; }
-      .dialog .primary-button { width: 100%; }
-      #record-note { min-height: 20px; color: #ffac8c; }
-      #error { position: fixed; inset: 0; display: grid; place-items: center; padding: 30px; background: #142e29; z-index: 10; }
-      #error p { max-width: 470px; line-height: 1.8; color: #c5d1c5; }
-      @media (max-width: 850px) {
-        header { top: 20px; left: 22px; right: 22px; }
-        .brand-divider, .brand-track { display: none; }
-        .lap-hud { top: 84px; padding: 11px 18px; gap: 18px; }
-        .right-hud { top: 180px; right: 22px; width: 190px; }
-        .speed-hud { left: 22px; bottom: 22px; min-width: 170px; padding: 16px; }
-        .speed-value { font-size: 54px; }
-        .driving-controls { right: 22px; bottom: 22px; }
-        #notice { bottom: 170px; max-width: 92vw; white-space: normal; }
-        .menu-bottom { left: 22px; right: 22px; bottom: 22px; }
-        .track-facts { gap: 20px; }
-        .menu-controls { max-width: 260px; }
-      }
-      @media (max-height: 620px) {
-        .right-hud { top: 84px; width: 190px; gap: 8px; }
-        .minimap-hud { padding: 10px 12px; }
-        .times-hud { padding: 12px 14px; }
-        .time-row { margin-top: 10px; }
-        .time-row:first-child { margin-bottom: 12px; padding-bottom: 12px; }
-        #menu { transform: translateY(-45%); }
-        h1 { font-size: 46px; margin-bottom: 12px; }
-        .menu-kicker { margin-bottom: 12px; }
-        .menu-description { margin-bottom: 16px; font-size: 12px; }
-        .menu-records { margin-top: 16px; }
-        .menu-bottom { bottom: 18px; }
-        .dialog { padding: 24px; }
+      .brand-mark { width: 38px; height: 26px; border: 7px solid var(--orange); border-radius: 50%; transform: rotate(-38deg); }
+      .brand-name { font-family: 'Barlow Condensed', sans-serif; font-size: 29px; font-weight: 700; letter-spacing: 1.5px; white-space: nowrap; }
+      .brand-name span { color: var(--orange); }
+      .circuit-label { display: flex; gap: 18px; align-items: center; }
+      .circuit-label .divider { height: 25px; width: 1px; background: var(--line); }
+      .eyebrow { color: var(--muted); font-size: 10px; font-weight: 600; letter-spacing: 2px; }
+      .circuit-label strong { display: block; margin-top: 4px; font-size: 12px; font-weight: 500; letter-spacing: .6px; }
+      .session-tag { border: 1px solid #c79d7e; background: #f8e7d8; color: var(--orange); padding: 7px 10px; font-size: 10px; letter-spacing: 1.6px; font-weight: 600; white-space: nowrap; }
+      .top-actions { display: flex; align-items: center; gap: 18px; }
+      .top-button { border: 0; background: transparent; color: var(--ink); font-size: 12px; display: flex; align-items: center; gap: 8px; padding: 10px 0; }
+      .top-button svg { width: 16px; height: 16px; }
+      .top-button:hover { color: var(--orange); }
+      .viewport { position: relative; height: calc(100% - 133px); min-height: 230px; overflow: hidden; background: #dfebe8; }
+      #scene { width: 100%; height: 100%; display: block; outline: none; }
+      .vignette { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, #fffdf815 0%, transparent 30%, transparent 65%, #fffdf86b 100%); }
+      .hud { position: absolute; top: 27px; left: 30px; right: 30px; pointer-events: none; display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; }
+      .race-data { display: flex; background: var(--panel); border: 1px solid var(--line); box-shadow: 0 3px 12px #26352c0a; }
+      .metric { padding: 17px 23px 19px; min-width: 166px; position: relative; }
+      .metric + .metric:before { content: ''; position: absolute; left: 0; top: 18px; bottom: 18px; width: 1px; background: var(--line); }
+      .metric:first-child { min-width: 115px; }
+      .metric-label { font-size: 9px; font-weight: 600; color: var(--muted); letter-spacing: 1.5px; display: flex; gap: 7px; align-items: center; }
+      .metric-label svg { width: 12px; height: 12px; color: var(--orange); }
+      .metric-value { display: block; margin-top: 7px; font-family: 'Barlow Condensed', sans-serif; font-size: 34px; font-weight: 500; font-variant-numeric: tabular-nums; letter-spacing: .8px; line-height: 1; }
+      .metric-value small { font-size: 21px; color: var(--muted); margin-left: 4px; }
+      #best-time { color: var(--orange); }
+      .map-panel { background: var(--panel); border: 1px solid var(--line); padding: 15px 17px 12px; width: 188px; }
+      .map-heading { display: flex; justify-content: space-between; align-items: center; font-size: 9px; font-weight: 600; letter-spacing: 1.5px; color: var(--muted); }
+      .live-dot { width: 5px; height: 5px; background: #356044; border-radius: 50%; }
+      #minimap { display: block; width: 152px; height: 100px; margin: 5px 0; }
+      .map-caption { border-top: 1px solid var(--line); padding-top: 9px; display: flex; justify-content: space-between; color: var(--muted); font-size: 9px; font-weight: 600; letter-spacing: .6px; }
+      .map-caption span:last-child { color: var(--ink); }
+      .location { position: absolute; left: 32px; bottom: 160px; pointer-events: none; display: flex; gap: 8px; align-items: center; padding: 6px 8px; background: var(--panel); border: 1px solid var(--line); color: var(--ink); font-size: 10px; font-weight: 600; letter-spacing: 2px; }
+      .location:before { content: ''; width: 15px; height: 1px; background: var(--orange); }
+      .speed-panel { position: absolute; bottom: 27px; left: 30px; padding: 16px 21px 15px; background: var(--panel); width: 220px; border: 1px solid var(--line); }
+      .speed-heading { display: flex; justify-content: space-between; font-size: 9px; font-weight: 600; letter-spacing: 1.7px; color: var(--muted); }
+      .gear { color: #356044; }
+      .speed-reading { display: flex; align-items: baseline; gap: 9px; margin-top: 1px; }
+      #speed { font-family: 'Barlow Condensed', sans-serif; font-size: 65px; line-height: 1.1; font-weight: 600; letter-spacing: -1px; font-variant-numeric: tabular-nums; }
+      .speed-unit { color: var(--muted); font-size: 10px; letter-spacing: 1px; }
+      .speed-track { display: flex; gap: 4px; height: 4px; margin-top: 8px; }
+      .speed-track i { flex: 1; background: #d3d8d2; transition: background .12s; transform: skew(-18deg); }
+      .speed-track i.active { background: var(--orange); }
+      .track-status { position: absolute; right: 30px; bottom: 28px; display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--panel); border: 1px solid var(--line); text-align: right; color: var(--ink); }
+      .track-status .status-dot { width: 7px; height: 7px; background: #356044; border-radius: 50%; }
+      .track-status strong { font-size: 11px; letter-spacing: 1px; font-weight: 500; }
+      .track-status small { color: var(--muted); display: block; margin-top: 4px; font-size: 10px; }
+      .track-status.offroad .status-dot { background: var(--orange); }
+      .start-hint { position: absolute; left: 50%; bottom: 42px; transform: translateX(-50%); text-align: center; pointer-events: none; white-space: nowrap; }
+      .start-hint p { margin: 0 0 8px; padding: 4px 10px; background: var(--panel); border: 1px solid var(--line); font-family: 'Barlow Condensed', sans-serif; font-size: 28px; letter-spacing: 3px; font-weight: 600; }
+      .start-hint span { display: inline-block; background: var(--panel); border: 1px solid var(--line); padding: 9px 15px; font-size: 11px; color: var(--muted); letter-spacing: .4px; }
+      .start-hint b { color: var(--orange); font-weight: 700; }
+      .countdown { position: absolute; z-index: 2; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 200px; padding: 20px; text-align: center; pointer-events: none; background: var(--panel); border: 1px solid var(--line); box-shadow: 0 4px 20px #26352c12; }
+      .countdown strong { display: block; font-family: 'Barlow Condensed', sans-serif; font-size: 120px; font-weight: 600; line-height: 1.1; color: var(--orange); }
+      .countdown small { display: block; margin-top: 8px; color: var(--muted); font-size: 11px; }
+      .toast { position: absolute; top: 147px; left: 50%; transform: translateX(-50%); padding: 11px 20px; background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--orange); color: var(--ink); font-size: 12px; pointer-events: none; white-space: nowrap; }
+      .footer { height: 48px; display: flex; justify-content: space-between; align-items: center; padding: 0 32px; gap: 20px; }
+      .controls { display: flex; gap: 22px; color: var(--muted); font-size: 10px; }
+      .control { display: flex; align-items: center; gap: 7px; }
+      kbd { font-family: 'Barlow', sans-serif; min-width: 19px; height: 20px; display: inline-flex; justify-content: center; align-items: center; padding: 0 4px; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 3px; font-size: 10px; }
+      .footer-note { font-size: 9px; letter-spacing: 1.5px; color: var(--muted); white-space: nowrap; }
+      .footer-note span { color: var(--orange); margin-right: 8px; }
+      .overlay { position: absolute; inset: 0; z-index: 5; background: #f8f6f0ba; backdrop-filter: blur(5px); display: grid; place-items: center; padding: 20px; }
+      .dialog { width: 420px; max-width: 100%; max-height: 100%; overflow-y: auto; background: var(--panel); border: 1px solid var(--line); padding: 32px; box-shadow: 0 8px 30px #26352c12; }
+      .dialog .eyebrow { color: var(--orange); }
+      .dialog h1 { font-family: 'Barlow Condensed', sans-serif; font-size: 48px; font-weight: 600; margin: 8px 0 5px; line-height: 1; letter-spacing: 1px; }
+      .dialog p { color: var(--muted); font-size: 12px; line-height: 1.8; margin-bottom: 22px; }
+      .result-total { display: flex; align-items: baseline; justify-content: space-between; border-block: 1px solid var(--line); padding: 18px 0; margin-top: 24px; }
+      .result-total span { font-size: 10px; color: var(--muted); letter-spacing: 1.5px; }
+      .result-total strong { font-family: 'Barlow Condensed', sans-serif; font-size: 42px; font-weight: 500; font-variant-numeric: tabular-nums; }
+      .lap-results { list-style: none; padding: 6px 0 12px; margin: 0; }
+      .lap-results li { display: flex; justify-content: space-between; align-items: center; margin-top: 13px; font-size: 12px; color: var(--muted); }
+      .lap-results strong { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+      .result-best { color: var(--orange) !important; margin-top: 6px !important; }
+      .primary-button { width: 100%; padding: 14px; background: #f6d8ba; color: var(--ink); border: 1px solid #bb8a64; font-weight: 700; font-size: 12px; display: flex; align-items: center; justify-content: space-between; }
+      .primary-button:hover { background: #edc7a0; }
+      .secondary-button { width: 100%; background: transparent; border: 1px solid var(--line); padding: 12px; margin-top: 10px; font-size: 12px; color: var(--muted); }
+      .error-panel { position: absolute; inset: 0; display: grid; place-items: center; background: var(--paper); z-index: 10; padding: 24px; }
+      .error-panel div { max-width: 420px; }
+      .error-panel h1 { font-size: 24px; color: var(--orange); }
+      .error-panel p { color: var(--muted); line-height: 1.8; }
+      @media (min-width: 1600px) { .hud { top: 35px; left: 40px; right: 40px; } .speed-panel { left: 40px; bottom: 35px; } }
+      @media (max-width: 1000px) { .topbar { padding-inline: 22px; } .circuit-label .divider, .session-tag { display: none; } .hud { left: 22px; right: 22px; top: 22px; } .metric { min-width: 145px; padding-inline: 18px; } .speed-panel { left: 22px; } .footer { padding-inline: 22px; } .footer-note { display: none; } .location { left: 24px; } .start-hint { left: 57%; } }
+      @media (max-width: 700px) { .topbar { height: 68px; padding-inline: 16px; gap: 10px; } .brand-name { font-size: 23px; } .brand-mark { width: 29px; height: 21px; border-width: 5px; } .brand { gap: 9px; } .circuit-label { display: none; } .top-actions { gap: 15px; } .top-button { font-size: 10px; } .viewport { height: calc(100% - 116px); } .hud { left: 14px; right: 14px; top: 14px; } .metric { padding: 13px 12px; min-width: 113px; } .metric:first-child { min-width: 75px; } .metric-value { font-size: 28px; } .metric-value small { font-size: 17px; } .metric-label { font-size: 8px; letter-spacing: .5px; } .map-panel { position: absolute; right: 0; top: 96px; width: 116px; padding: 10px; } #minimap { width: 94px; height: 65px; margin: 0; } .map-heading { font-size: 7px; } .map-caption { display: none; } .speed-panel { bottom: 18px; left: 14px; width: 157px; padding: 12px 14px; } #speed { font-size: 51px; } .speed-heading { font-size: 8px; } .location { left: 16px; bottom: 132px; font-size: 8px; } .start-hint { left: auto; right: 14px; bottom: 75px; transform: none; } .start-hint p { font-size: 21px; letter-spacing: 1px; } .start-hint span { font-size: 9px; padding: 7px 10px; } .track-status { right: 15px; bottom: 20px; } .track-status strong { font-size: 9px; } .track-status small { font-size: 9px; } .footer { padding-inline: 14px; } .controls { gap: 12px; font-size: 9px; } .control { gap: 4px; } .control .alternative { display: none; } .toast { top: 109px; font-size: 10px; padding: 10px 12px; } .dialog { padding: 24px; } }
+      @media (max-height: 570px) { .topbar { height: 58px; } .viewport { height: calc(100% - 100px); } .footer { height: 42px; } .hud { top: 14px; } .metric { padding-block: 11px; } .map-panel { padding-block: 8px; } #minimap { height: 65px; } .speed-panel { bottom: 14px; padding-block: 8px; } #speed { font-size: 43px; } .location { display: none; } .start-hint { bottom: 25px; } .dialog h1 { font-size: 34px; } .dialog { padding: 22px; } .result-total { margin-top: 10px; padding-block: 8px; } .lap-results li { margin-top: 8px; } }
+      @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+      @page { size: A4 landscape; margin: 10mm; }
+      @media print {
+        html, body { width: 100%; height: 185mm; overflow: visible; }
+        body { background: #fff; color: #111; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+        .topbar { height: 20mm; }
+        .viewport { height: 150mm; min-height: 0; break-inside: avoid; }
+        .footer { height: 12mm; }
+        .race-data, .map-panel, .speed-panel, .location, .track-status, .start-hint p, .start-hint span, .countdown, .toast, .dialog, kbd { background: #fff; box-shadow: none; }
+        .vignette { display: none; }
+        .overlay { background: #ffffffd9; backdrop-filter: none; }
       }
     </style>
     <script type="importmap">
       { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js" } }
     </script>
   </head>
-  <body class="menu-open">
-    <div id="viewport" aria-label="3D 레이싱 트랙"></div>
-    <div class="vignette"></div>
-    <header>
-      <div class="brand"><span class="brand-mark" aria-hidden="true"></span><span class="brand-name">OVAL</span><span class="brand-divider"></span><span class="brand-track eyebrow mono">THE GARDEN CIRCUIT</span></div>
-      <div id="race-actions" class="header-actions" hidden><button id="pause-button" class="quiet-button">Ⅱ 일시정지</button><button id="restart-button" class="quiet-button">↻ 재시작</button></div>
-      <span id="menu-edition" class="eyebrow mono">A LITTLE FASTER. EVERY LAP.</span>
+  <body>
+    <header class="topbar">
+      <div class="brand" aria-label="Oval Club"><span class="brand-mark" aria-hidden="true"></span><span class="brand-name">OVAL <span>CLUB</span></span></div>
+      <div class="circuit-label"><span class="session-tag">TIME ATTACK</span><span class="divider"></span><div><span class="eyebrow">SUNSET CIRCUIT</span><strong>하나의 서킷. 당신의 가장 빠른 세 바퀴.</strong></div></div>
+      <nav class="top-actions" aria-label="경기 제어">
+        <button class="top-button" id="pause-button" type="button" aria-label="일시정지 (P 또는 Esc)"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M7 4v12M13 4v12"/></svg><span>일시정지</span></button>
+        <button class="top-button" id="restart-button" type="button" aria-label="다시 시작 (R)"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 8a6 6 0 1 1 0 5M4 3v5h5"/></svg><span>다시 시작</span></button>
+      </nav>
     </header>
-    <main id="menu">
-      <div class="menu-kicker"><span class="line"></span><span class="eyebrow mono">SINGLE PLAYER / TIME ATTACK</span></div>
-      <h1>한 바퀴 더.<br /><em>더 빠르게.</em></h1>
-      <p class="menu-description">초록빛 서킷, 당신의 차, 그리고 3바퀴.<br />커브를 읽고 페이스를 찾아 나만의 기록을 만들어보세요.</p>
-      <button id="start-button" class="primary-button" disabled><span id="start-label">트랙 준비 중…</span><span class="button-arrow" aria-hidden="true">↗</span></button>
-      <div class="menu-records"><div><span class="eyebrow">최고 랩</span><strong id="menu-best-lap" class="mono">—</strong></div><div><span class="eyebrow">최고 완주</span><strong id="menu-best-race" class="mono">—</strong></div></div>
-    </main>
-    <div id="menu-bottom" class="menu-bottom">
-      <div class="track-facts mono"><div><b>01</b><span class="eyebrow">CIRCUIT</span></div><div><b>03</b><span class="eyebrow">LAPS</span></div><div><b>∞</b><span class="eyebrow">RETRIES</span></div></div>
-      <div class="menu-controls"><kbd>W</kbd> <kbd>↑</kbd> 가속 &nbsp; <kbd>S</kbd> <kbd>↓</kbd> 브레이크<br /><kbd>A</kbd> <kbd>←</kbd> <kbd>D</kbd> <kbd>→</kbd> 조향 &nbsp; · &nbsp; <kbd>ESC</kbd> 일시정지<br />트랙을 벗어난 랩은 무효 · 출발선에서 다시 도전</div>
-    </div>
-    <div id="hud" hidden>
-      <div class="lap-hud"><div><div class="eyebrow mono">LAP</div><div class="lap-number mono"><span id="lap-number">01</span><small> / 03</small></div><div id="lap-progress" class="lap-progress"><i class="active"></i><i></i><i></i></div></div><div><div class="eyebrow">현재 랩</div><div id="lap-time" class="lap-time mono">00:00.000</div></div></div>
-      <div class="right-hud">
-        <section class="minimap-hud" aria-label="트랙 미니맵">
-          <div class="minimap-heading"><span class="eyebrow mono">CIRCUIT / 01</span><span class="minimap-legend"><i aria-hidden="true"></i>내 차</span></div>
-          <svg id="minimap" viewBox="-94 -62 188 124" role="img" aria-label="타원형 트랙, 출발선과 내 차의 실시간 위치 및 진행 방향">
-            <ellipse id="minimap-outer" fill="#52685d" stroke="#b4c5ac" stroke-width=".9" />
-            <ellipse id="minimap-inner" fill="#18372d" stroke="#b4c5ac" stroke-width=".9" />
-            <ellipse id="minimap-center" fill="none" stroke="#d1dbc1" stroke-width=".6" stroke-dasharray="3 5" opacity=".55" />
-            <line id="minimap-start" stroke="#f5f3e9" stroke-width="2" />
-            <g id="minimap-car"><circle r="7" fill="#172d2b" stroke="#ff633b" stroke-width="1" /><path d="M 0 -5 L 4 4 L 0 2 L -4 4 Z" fill="#ff633b" /></g>
-          </svg>
-        </section>
-        <div class="times-hud"><div class="time-row"><span>총 경과 시간</span><strong id="total-time" class="mono">00:00.000</strong></div><div class="time-row"><span>직전 랩</span><strong id="last-lap" class="mono">—</strong></div><div class="time-row record"><span>최고 랩</span><strong id="best-lap" class="mono">—</strong></div><div class="time-row record"><span>최고 완주</span><strong id="best-race" class="mono">—</strong></div></div>
+    <main class="viewport" id="viewport" aria-label="3D 레이싱 게임">
+      <canvas id="scene" aria-label="노을빛 타원형 서킷과 플레이어 자동차"></canvas>
+      <div class="vignette"></div>
+      <div class="hud">
+        <div class="race-data" aria-label="실시간 경기 기록">
+          <div class="metric"><span class="metric-label">LAP / 바퀴</span><span class="metric-value"><span id="lap">01</span><small>/ 03</small></span></div>
+          <div class="metric"><span class="metric-label">LAP TIME / 랩 타임</span><time class="metric-value" id="lap-time">00:00.000</time></div>
+          <div class="metric"><span class="metric-label"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true"><path d="m8 1 2.1 4.2 4.7.7-3.4 3.3.8 4.7L8 11.7 3.8 14l.8-4.8L1.2 6l4.7-.7Z"/></svg>BEST / 최고 랩</span><time class="metric-value" id="best-time">--:--.---</time></div>
+        </div>
+        <aside class="map-panel" aria-label="서킷 미니맵"><div class="map-heading"><span>CIRCUIT 01</span><span class="live-dot"></span></div><canvas id="minimap" width="456" height="300" aria-label="트랙과 현재 차량 위치"></canvas><div class="map-caption"><span>OVAL · 3 LAPS</span><span id="progress">0% COMPLETE</span></div></aside>
       </div>
-      <div class="speed-hud"><div class="speed-value mono"><span id="speed">000</span><small>KM/H</small></div><div class="speed-meter"><span id="speed-bar"></span></div><div class="speed-footer mono"><span>RWD / 01</span><span id="surface-status"><i class="status-dot"></i>TRACK</span></div></div>
-      <div class="driving-controls"><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> &nbsp; 또는 &nbsp; <kbd>↑</kbd> <kbd>←</kbd> <kbd>↓</kbd> <kbd>→</kbd><br />가속 / 브레이크 / 조향 &nbsp; · &nbsp; <kbd>ESC</kbd> 일시정지</div>
-      <div id="notice" role="status" aria-live="polite" hidden></div>
-    </div>
-    <div id="dialog-layer" hidden>
-      <section id="pause-dialog" class="dialog" role="dialog" aria-modal="true" aria-labelledby="pause-title" hidden><div class="eyebrow mono">TAKE A BREATH</div><h2 id="pause-title">잠시 쉬어가기</h2><p>차량과 타이머가 멈췄습니다.<br />준비되면 다시 트랙으로 돌아가세요.</p><button id="resume-button" class="primary-button"><span>계속 달리기</span><span class="button-arrow" aria-hidden="true">→</span></button></section>
-      <section id="finish-dialog" class="dialog" role="dialog" aria-modal="true" aria-labelledby="finish-title" hidden><div class="eyebrow mono">CHECKERED FLAG / 03 OF 03</div><h2 id="finish-title">완주했습니다.</h2><div id="result-total" class="mono">00:00.000</div><ul id="result-laps"></ul><p id="record-note"></p><button id="race-again-button" class="primary-button"><span>한 번 더 달리기</span><span class="button-arrow" aria-hidden="true">↗</span></button></section>
-    </div>
-    <div id="error" role="alert" hidden><div><span class="eyebrow mono">PIT STOP</span><h2>트랙을 불러오지 못했습니다.</h2><p id="error-message"></p><button class="primary-button" onclick="location.reload()">다시 불러오기 ↻</button></div></div>
+      <div class="location">SUNSET CIRCUIT &nbsp; / &nbsp; GOLDEN HOUR</div>
+      <aside class="speed-panel" aria-label="속도계"><div class="speed-heading"><span>SPEED / 속도</span><span class="gear" id="gear">N</span></div><div class="speed-reading"><span id="speed">000</span><span class="speed-unit">KM/H</span></div><div class="speed-track" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></aside>
+      <div class="start-hint" id="start-hint"><p>MAKE EVERY LAP COUNT.</p><span><b>W</b> 또는 <b>↑</b> 를 눌러 출발하세요</span></div>
+      <div class="countdown" id="countdown" role="status" aria-live="polite" aria-atomic="true" hidden><span class="eyebrow">GET READY</span><strong id="countdown-value">3</strong><small>카운트다운 후 출발</small></div>
+      <div class="track-status" id="track-status"><div><strong id="surface-label">READY TO RACE</strong><small id="surface-detail">세 바퀴, 하나의 새로운 기록.</small></div><span class="status-dot"></span></div>
+      <div class="toast" id="toast" role="status" hidden></div>
+      <section class="overlay" id="pause-overlay" role="dialog" aria-modal="true" aria-labelledby="pause-title" hidden><div class="dialog"><span class="eyebrow">TAKE A BREATHER</span><h1 id="pause-title">잠시, 피트 스톱.</h1><p>주행과 기록 측정을 일시정지했습니다.<br />준비되면 다시 서킷으로 돌아가세요.</p><button class="primary-button" id="resume-button" type="button"><span>계속 달리기</span><span aria-hidden="true">→</span></button><button class="secondary-button" id="pause-restart-button" type="button">처음부터 다시 시작</button></div></section>
+      <section class="overlay" id="finish-overlay" role="dialog" aria-modal="true" aria-labelledby="finish-title" hidden><div class="dialog"><span class="eyebrow">3 LAPS. ALL YOURS.</span><h1 id="finish-title">RACE COMPLETE.</h1><div class="result-total"><span>TOTAL TIME</span><strong id="total-time">00:00.000</strong></div><ol class="lap-results" id="lap-results"></ol><p class="result-best" id="result-best"></p><button class="primary-button" id="finish-restart-button" type="button"><span>한 번 더 달리기</span><span aria-hidden="true">↗</span></button></div></section>
+      <section class="error-panel" id="error-panel" role="alert" hidden><div><span class="eyebrow">OVAL CLUB</span><h1>서킷을 불러오지 못했습니다.</h1><p id="error-message">인터넷 연결과 브라우저의 WebGL 지원 여부를 확인한 뒤 새로고침해 주세요.</p></div></section>
+    </main>
+    <footer class="footer"><div class="controls"><span class="control"><kbd>W</kbd><kbd>↑</kbd> 가속</span><span class="control"><kbd>S</kbd><kbd>↓</kbd> 브레이크</span><span class="control"><kbd>A</kbd><kbd>D</kbd><span class="alternative"><kbd>←</kbd><kbd>→</kbd></span> 조향</span><span class="control"><kbd>P</kbd> 일시정지</span><span class="control"><kbd>R</kbd> 재시작</span></div><span class="footer-note"><span>●</span> JUST YOU & THE CIRCUIT</span></footer>
     <script type="module">
-      try {
-        const { boot } = await import('./main.js');
-        boot();
-      } catch (error) {
+      import('./main.js').catch((error) => {
         console.error(error);
-        document.getElementById('error').hidden = false;
-        document.getElementById('error-message').textContent = '로컬 HTTP 서버로 접속했는지, 인터넷 연결과 브라우저의 WebGL 지원을 확인하세요. ' + error.message;
-      }
+        document.getElementById('error-panel').hidden = false;
+        document.getElementById('error-message').textContent = location.protocol === 'file:'
+          ? '로컬 웹 서버로 실행해 주세요. 이 폴더에서 python3 -m http.server 8000을 실행한 뒤 http://localhost:8000에 접속하세요.'
+          : '인터넷 연결 및 브라우저의 WebGL 2 지원 여부를 확인한 뒤 새로고침해 주세요.';
+      });
     </script>
   </body>
 </html>
